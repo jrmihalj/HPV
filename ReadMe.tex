@@ -3,9 +3,9 @@
 \title{Dynamic metacommunity model to evaluate HPV strain interactions}
 \author{Joe Mihaljevic}
 
-\usepackage{Sweave}
+%\usepackage{Sweave}
 \begin{document}
-\input{ReadMe-concordance}
+%\input{ReadMe-concordance}
 \maketitle
 
 \section*{Introduction}
@@ -14,7 +14,7 @@ The goal of this project is to create a dynamic, statistical, metacommunity mode
 
 \section*{Model Specification}
 
-Here we will outline the dynamic, statistical metacommunity model. This model is based off of Dorazio et al. 2010, Ecology, but importantly does not include the estimation of probability of detection.
+Here we will outline the dynamic, statistical metacommunity model. This model is based off of Dorazio et al. 2010, Ecology. Importantly, this model does not include the estimation of probability of detection, which corresponds in Dorazio 2010 to the probability of observing rare species. However, detection probability could later be incorporated in our model to reflect the sensitivity and specificity of HPV genotype testing.
 
 Our data set consists of $K$ number of patients, who have been scored for the binomial occupancy of any of $I$ number of HPV strains over $T_{k}$ number of visits, where $T_{k}$ is allowed to vary among patients. Thus the data are of type $y_{ikt}$, which simply consists of a 0 or 1, depending on whether HPV strain $i$ was present in patient $k$ on visit $t$. 
 
@@ -33,7 +33,7 @@ One of our main goals is to determine how strain interactions might affect the a
 
 $$ logit(\phi_{ikt}) = \textbf{B}_{i}\textbf{X}_{k} + \textbf{B}^{k}_{i}\textbf{X}_{t[k]} $$
 
-This model is a non-nested multi-level model, because patients have variable numbers of visits and some covariates are measured at the patient level and are static throughout the experiment, while other covariates are dynamic through time. In the above expression, $ \textbf{B}_{i} = (b_{0i}, b_{1i}, \dots, b_{qi})^{'} $ for $q$ number of covariate effects measured at the patient level that do not change across visits. Thus, $ \textbf{X}_{k} = (1, x_{1k}, x_{2k}, \dots, x_{qk}) $ holds the patient-level values of these covariates. We then incorporate a strain-specific, among-patient, random effect via by drawing the intercepts, $b_0$, from a multivariate normal distribution:
+This model is a non-nested multi-level model, because patients have variable numbers of visits and some covariates are measured at the patient level and are static throughout the experiment, while other covariates are dynamic through time. Importantly, the structure of the data makes it easy to incorporate time-varying covariates in this framework, as the full set of covariates are measured at each visit, and time is indexed by visit number. In the above expression, $ \textbf{B}_{i} = (b_{0i}, b_{1i}, \dots, b_{qi})^{'} $ for $q$ number of covariate effects measured at the patient level that do not change across visits. Thus, $ \textbf{X}_{k} = (1, x_{1k}, x_{2k}, \dots, x_{qk}) $ holds the patient-level values of these covariates. We then incorporate a strain-specific, among-patient, random effect via by drawing the intercepts, $b_0$, from a multivariate normal distribution:
 
 $$ b_0 \sim N(\mu_{\phi}, \Sigma_{b_{0}}), $$
 
