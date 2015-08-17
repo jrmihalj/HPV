@@ -267,24 +267,7 @@ Y <- rbinom(n.obs, 1, psi)
 Occ <- data.frame(Y, Strain, Patient, Visit.Pat, X.time.vals, X.pat.vals)
 @
 
-Sometimes, interesting patterns can emerge at the across-patient scale that deviate from the simulated parameters. For instance, if ignored, within-host correlations can strongly bias the estimated among-host covariate effects.
-\begin{center}
-<<echo=FALSE,fig=TRUE,>>=
-mod.time <- glm(Y ~ X.time.vals * factor(Strain), data = Occ, family="binomial")
-preds <- predict(mod.time)
-
-plot(x=NA,y=NA, xlim=c(-3,3), ylim=c(0,1.2), xlab="Covariate", ylab="Occupancy")
-points(Y ~ X.time.vals, data = Occ[Strain==1,], col="orange", pch=1)
-points(Y+.05 ~ X.time.vals, data = Occ[Strain==2,], col="black", pch=1)
-points(AntiLogit(preds[Strain==1]) ~ X.time.vals[Strain==1], col="orange", pch=19, cex=.25)
-points(AntiLogit(preds[Strain==2]) ~ X.time.vals[Strain==2], col="black", pch=19, cex=.25)
-legend(x=-3, y=.9, 
-       legend=c(paste("Strain1, True Beta:",round(beta.time[1],2)), paste("Strain2, True Beta:",round(beta.time[2],2))), 
-       col=c("orange","black"), pch=c(1,1), cex=.75)
-@
-\end{center}
-
-Now we need to write the \emph{stan} model and make sure that the model can adequately estimate the imposed parameters. 
+JOE TODO: Set up a GLMM model and see if we can recover the parameters with maximum likelihood. Then, write the \emph{stan} model and make sure that the model can adequately estimate the imposed parameters. 
 
 \end{document}
 
