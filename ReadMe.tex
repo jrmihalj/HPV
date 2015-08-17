@@ -3,9 +3,12 @@
 \title{Dynamic metacommunity model to evaluate HPV strain interactions}
 \author{Joe Mihaljevic}
 
-%\usepackage{Sweave}
+\usepackage{geometry}
+\geometry{legalpaper, portrait, margin=1in}
+
+\usepackage{Sweave}
 \begin{document}
-%\input{ReadMe-concordance}
+\input{ReadMe-concordance}
 \maketitle
 
 \section*{Introduction}
@@ -14,7 +17,7 @@ The goal of this project is to create a dynamic, statistical, metacommunity mode
 
 \section*{Model Specification}
 
-Here we will outline the dynamic, statistical metacommunity model. This model is based off of Dorazio et al. 2010, Ecology. Importantly, this model does not include the estimation of probability of detection, which corresponds in Dorazio 2010 to the probability of observing rare species. However, detection probability could later be incorporated in our model to reflect the sensitivity and specificity of HPV genotype testing.
+HHere we will outline the dynamic, statistical metacommunity model. This model is based off of Dorazio et al. 2010, Ecology. Importantly, this model does not include the estimation of probability of detection, which corresponds in Dorazio 2010 to the probability of observing rare species. However, detection probability could later be incorporated in our model to reflect the sensitivity and specificity of HPV genotype testing.
 
 Our data set consists of $K$ number of patients, who have been scored for the binomial occupancy of any of $I$ number of HPV strains over $T_{k}$ number of visits, where $T_{k}$ is allowed to vary among patients. Thus the data are of type $y_{ikt}$, which simply consists of a 0 or 1, depending on whether HPV strain $i$ was present in patient $k$ on visit $t$. 
 
@@ -67,8 +70,204 @@ Thus our model estimates both the among-patient and within-patient strain correl
 
 \section*{Simulation as proof of concept}
 
-Here I will embed code and figures that prove that our model works in the sense that we can recover imposed parameters from simulated data. I will also show examples in which correlations among strains' persistence or colonization probabilities change sign depending on whether we look across or within patients. 
+Here we will embed code and figures that prove that our model works in the sense that we can recover imposed parameters from simulated data. We will also show examples in which correlations among strains' persistence or colonization probabilities change sign depending on whether we look across or within patients. 
 
+Let's start with a simple case with only two HPV strains.
+\begin{Schunk}
+\begin{Sinput}
+> # Basic:
+> n.strains <- 2 #number of HPV strains
+> n.patients <- 100 #number of patients tested
+> n.visits <- rbinom(n.patients, 10, .8) #number of visits per patient,which varies among patients
+> n.obs.perpat <- n.strains*n.visits #number of "tests" per patient
+> n.obs <- sum(n.obs.perpat) #total number of "tests" (One test per strain per patient per visit)
+> # Useful transformation functions:
+> Logit <- function(x){
++   log(x) - log(1 - x)
++ }
+> AntiLogit <- function(x){
++   exp(x) / (exp(x) + 1)
++ }
+\end{Sinput}
+\end{Schunk}
+
+We need indices to structure the data set.
+\begin{Schunk}
+\begin{Sinput}
+> # Indices:
+> Strain <- rep(c(1,2), times=n.obs/n.strains) #Strain index
+> Patient <- NULL
+> for(i in 1:n.patients){
++   Patient <- c(Patient, rep(i, times=n.obs.perpat[i]))
++ }
+> # Overall visit:
+> Visit <- rep(1:sum(n.visits), each=n.strains) 
+> # Visit number per patient:
+> Visit.Pat <- NULL
+> for(i in 1:n.patients){
++   Visit.Pat <- c(Visit.Pat, rep(1:n.visits[i], each=n.strains))
++ }
+\end{Sinput}
+\end{Schunk}
+
+Now we will simulate the covariates measured per patient, which are either static or dynamic through time. We assume centered and scaled, continuous covariates. We will also assign covariate responses.
+
+\textbf{It is important to note that all rates are on the logit scale.}
+\begin{Schunk}
+\begin{Sinput}
+> # Covariates (centered to mean and scaled to 1 sd):
+> q.pat <- 1 #number of covariates measured at the patient-level (but not over time)
+> q.time <- 1 #number of covariates measured for each patient at each visit
+> X.pat.vals <- NULL
+> for(i in 1:n.patients){
++   X.pat.vals <- c(X.pat.vals, rep(rnorm(1,0,1), times=n.obs.perpat[i]))
++ }
+> X.time.vals <- NULL
+> for(i in 1:n.patients){
++   X.time.vals <- c(X.time.vals, rep(rnorm(n.visits[i],0,1), each=n.strains))
++ }
+> # Covariate responses:
+> b.pat.mean <- .15
+> b.time.mean <- .15
+> beta.pat <- rnorm(n.strains, b.pat.mean, .75)
+> beta.time <- rnorm(n.strains, b.time.mean, .75)
+\end{Sinput}
+\end{Schunk}
+
+Here we code the across-host strain correlations in persistence and colonization probabilities
+\begin{Schunk}
+\begin{Sinput}
+> #Because we only have 2 strains I will code the
+> #covariance matrices manually.
+> 
+> #Across-patient std.dev. in persistence for each strain:
+> sig.across.phi.1 <- .4
+> sig.across.phi.2 <- .4
+> #Correlation:
+> rho.across.phi <- .7
+> #Covariance matrix:
+> Sig.across.phi <- matrix(
++   c(sig.across.phi.1^2, rho.across.phi*sig.across.phi.1*sig.across.phi.2,
++     rho.across.phi*sig.across.phi.1*sig.across.phi.2, sig.across.phi.2^2),
++   ncol=2
++   )
+> #Across-patient std.dev. in colonization for each strain:
+> sig.across.gam.1 <- .4
+> sig.across.gam.2 <- .4
+> #Correlation:
+> rho.across.gam <- .5
+> #Covariance matrix:
+> Sig.across.gam <- matrix(
++   c(sig.across.gam.1^2, rho.across.gam*sig.across.gam.1*sig.across.gam.2,
++     rho.across.gam*sig.across.gam.1*sig.across.gam.2, sig.across.gam.2^2),
++   ncol=2
++   )
+> ##############################
+> # Within-patient covariances:
+> 
+> #Within-patient std.dev. in persistence for each strain:
+> sig.within.phi.1 <- .2
+> sig.within.phi.2 <- .2
+> #Correlation:
+> rho.within.phi <- -.8
+> #Covariance matrix:
+> Sig.within.phi <- matrix(
++   c(sig.within.phi.1^2, rho.within.phi*sig.within.phi.1*sig.within.phi.2,
++     rho.within.phi*sig.within.phi.1*sig.within.phi.2, sig.within.phi.2^2),
++   ncol=2
++   )
+> #within-patient std.dev. in colonization for each strain:
+> sig.within.gam.1 <- .2
+> sig.within.gam.2 <- .2
+> #Correlation:
+> rho.within.gam <- -.6
+> #Covariance matrix:
+> Sig.within.gam <- matrix(
++   c(sig.within.gam.1^2, rho.within.gam*sig.within.gam.1*sig.within.gam.2,
++     rho.within.gam*sig.within.gam.1*sig.within.gam.2, sig.within.gam.2^2),
++   ncol=2
++   )
+> 
+> 
+\end{Sinput}
+\end{Schunk}
+
+Now we'll draw the random effects from the covariance matrices.
+\begin{Schunk}
+\begin{Sinput}
+> library(mnormt) #needed for multivariate normal distrib.
+> b.0.phi <- rmnorm(n.patients, mean=rep(0,n.strains), varcov=Sig.across.phi) 
+> b.0.gam <- rmnorm(n.patients, mean=rep(0,n.strains), varcov=Sig.across.gam)
+> b.1t.phi <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.across.phi)
+> b.1t.gam <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.across.phi)
+> 
+\end{Sinput}
+\end{Schunk}
+
+We will create vectors of all $\phi$ and $\gamma$ values, one valcue for each observation. 
+\begin{Schunk}
+\begin{Sinput}
+> # Storage:
+> phi <- NULL
+> gam <- NULL
+> # We need to assign the global mean values for phi and gamma
+> mean.phi <- Logit(.5)
+> mean.gam <- Logit(.5)
+> # Formula from our model:
+> # (phi/gamma) <- global_mean + intercept_among + covariate_among + 
+> #                     intercept_within + covariate_within
+> for(i in 1:n.obs){
++   phi[i] <- mean.phi + b.0.phi[Patient[i],Strain[i]] + beta.pat[Strain[i]] * X.pat.vals[i] + 
++                 b.1t.phi[Visit[i],Strain[i]] + beta.time[Strain[i]] * X.time.vals[i]
++   gam[i] <- mean.gam + b.0.gam[Patient[i],Strain[i]] + beta.pat[Strain[i]] * X.pat.vals[i] + 
++                 b.1t.gam[Visit[i],Strain[i]] + beta.time[Strain[i]] * X.time.vals[i]
++ }
+> 
+\end{Sinput}
+\end{Schunk}
+
+Now we can calculate the probabilities of occurrence, $\psi$.
+\begin{Schunk}
+\begin{Sinput}
+> # First we need the initial occurrence probability for each strain for each patient.
+> # We assume this probability is not influenced by covariates, but this assumption
+> # could be relaxed in the future. Instead we assume the initial probabilities are
+> # generated randomly from a global occurrence probability.
+> 
+> psi.mean <- Logit(.6)
+> # Calculate AntiLogit for phi and gam
+> lphi <- AntiLogit(phi)
+> lgam <- AntiLogit(gam)
+> psi <- NULL
+> for(i in 1:n.obs){
++   
++   if(Visit.Pat[i]==1){ # If it's the patient's first visit
++     psi[i] <- AntiLogit(rnorm(1,psi.mean,.2))
++   }else{
++     psi[i] <- lgam[i-1] * psi[i-1] + lphi[i-1] * (1 - psi[i-1]) 
++   }
++   
++ }
+> 
+\end{Sinput}
+\end{Schunk}
+
+Finally, to complete the simulation, we will draw observed occurrences from the derived probabilities of occurrence, $\psi$. The benefit of conducting the simulation in the way we did above, is that now we can vectorize the simulated observations. This will be very helpful for optimizing the \emph{stan} model later on.
+\begin{Schunk}
+\begin{Sinput}
+> Y <- NULL
+> Y <- rbinom(n.obs, 1, psi)
+> # Create a data.frame
+> Occ <- data.frame(Y, Strain, Patient, Visit.Pat, X.time.vals, X.pat.vals)
+\end{Sinput}
+\end{Schunk}
+
+Sometimes, interesting patterns can emerge at the across-patient scale that deviate from the simulated parameters. For instance, if ignored, within-host correlations can strongly bias the estimated among-host covariate effects.
+\begin{center}
+\includegraphics{ReadMe-009}
+\end{center}
+
+Now we need to write the \emph{stan} model and make sure that the model can adequately estimate the imposed parameters. 
 
 \end{document}
 
