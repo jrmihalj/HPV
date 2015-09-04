@@ -36,6 +36,9 @@ parameters
   
   cov_matrix[n_strains] sig_across_phi;
   cov_matrix[n_strains] sig_within_phi;	
+
+  vector[n_strains] beta_pat[n_obs];
+  vector[n_strains] beta_time[n_obs];
 }
 
 model
@@ -49,8 +52,8 @@ model
   }
 
   for( j in 1:n_obs){
-    patient_vals[j] ~ multi_normal(b_0_phi, sig_across_phi);
-    time_vals[j] ~ multi_normal(b_1t_phi, sig_within_phi);
+    beta_pat[j] ~ multi_normal(b_0_phi, sig_across_phi);
+    beta_time[j] ~ multi_normal(b_1t_phi, sig_within_phi);
   }
 } // end model block
 
