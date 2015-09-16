@@ -204,8 +204,8 @@ library(mnormt) #needed for multivariate normal distrib.
 b.0.phi <- rmnorm(n.patients, mean=rep(0,n.strains), varcov=Sig.across.phi) 
 b.0.gam <- rmnorm(n.patients, mean=rep(0,n.strains), varcov=Sig.across.gam)
 
-b.1t.phi <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.across.phi)
-b.1t.gam <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.across.phi)
+b.1t.phi <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.within.phi)
+b.1t.gam <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.within.gam)
 
 @
 
@@ -250,7 +250,7 @@ for(i in 1:n.obs){
   if(Visit.Pat[i]==1){ # If it's the patient's first visit
     psi[i] <- AntiLogit(rnorm(1,psi.mean,.2))
   }else{
-    psi[i] <- lgam[i-1] * psi[i-1] + lphi[i-1] * (1 - psi[i-1]) 
+    psi[i] <- lgam[i-2] * psi[i-2] + lphi[i-2] * (1 - psi[i-2]) 
   }
   
 }
