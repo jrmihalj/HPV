@@ -3,6 +3,7 @@ data
 	int<lower=0> n_strains;
 	int<lower=0> n_obs;
 	int<lower=0> n_patients;
+	int<lower=0> possible_visits; // store max possible visits for within-patient random effects
 	
 	int<lower=0> Y[n_obs]; //occupancy observations
 	int<lower=0> strain[n_obs]; // strain for this observation
@@ -18,6 +19,7 @@ parameters
 {
 // intercepts
 real phi_mean ; // global mean of colonization probability
+real psi_mean; // initial occupancy probability
 
 real beta_pat_mean;
 real beta_time_mean;
@@ -29,30 +31,44 @@ real beta_time[ n_strains]; // fixed across
 
 
 // random effects
-	cholesky_factor_corr[n_strains] L_patient;
-	matrix[n_strains, n_patients] z_patient;
-	vector<lower=0> [n_strains] tau_patient; // across patient std deviations
+	cholesky_factor_corr[n_strains] L_patient_phi;
+	matrix[n_strains, n_patients] z_patient_phi;
+	vector<lower=0> [n_strains] tau_patient_phi; // across patient std deviations
 	
-	cholesky_factor_corr[n_strains] L_time;
-	matrix[n_strains, n_obs] z_time;
-	vector<lower=0> [n_strains] tau_time; // within patient std deviations
+	cholesky_factor_corr[n_strains] L_patient_gam;
+	matrix[n_strains, n_patients] z_patient_gam;
+	vector<lower=0> [n_strains] tau_patient_gam; // across patient std deviations
+	
+	cholesky_factor_corr[n_strains] L_time_phi;
+	matrix[n_strains, n_obs] z_time_phi;
+	vector<lower=0> [n_strains] tau_time_phi; // within patient std deviations
+	
+	cholesky_factor_corr[n_strains] L_time_gam;
+	matrix[n_strains, n_obs] z_time_gam;
+	vector<lower=0> [n_strains] tau_time_gam; // within patient std deviations
 	
 	}
 	
 transformed parameters{
 	vector[n_obs] phi; //time,patient,strain specific colonization probability
+	vector[n_obs] gam; //time,patient,strain specific persistence probability
 	
 	//random effects
-	alpha_patient <- (diag_pre_multiply(tau_patient, L_patient) * z_patient)';
-	alpha_time <- (diag_pre_multiply(tau_time, L_time) * time)';
+	alpha_patient_phi <- (diag_pre_multiply(tau_patient_phi, L_patient_phi) * z_patient_phi)';
+	alpha_time_phi <- (diag_pre_multiply(tau_time_phi, L_time_phi) * z_time_phi)';
+	
+	alpha_patient_gam <- (diag_pre_multiply(tau_patient_gam, L_patient_gam) * z_patient_gam)';
+	alpha_time_gam <- (diag_pre_multiply(tau_time_gam, L_time_gam) * z_time_gam)';
 	
 	for(i in 1:n_obs){
-		phi[i] <- phi_mean + beta_pat[strain[i]]*X_pat[i] + alpha_patient[patient[i],strain[i]] + beta_time[strain[i]]*X_time[i] + alpha_time[visit[i],strain[i]];
+		phi[i] <- inv_logit(phi_mean + beta_pat[strain[i]]*X_pat[i] + alpha_patient_phi[patient[i],strain[i]] + beta_time[strain[i]]*X_time[i] + alpha_time_phi[i,strain[i]]);
+		gam[i] <- inv_logit(gam_mean + beta_pat[strain[i]]*X_pat[i] + alpha_patient_gam[patient[i],strain[i]] + beta_time[strain[i]]*X_time[i] + alpha_time_gam[i,strain[i]]);
 	}
 
 model
 {
-
+  real psi[n_obs];
+  
   // prior on fixed effects
   beta_pat_mean ~ normal(0,10);
   beta_time_mean ~ normal(0,10);
@@ -73,6 +89,21 @@ model
   to_vector(z_time) ~ normal(0,1);
   
   // occupancy likelihood
+  
+  for( i in 1:n_obs){
+  	// initial likelihood:
+  	if(Visit_pat == 1){
+  		psi[i] <- inv_logit(psi_mean);
+  	}
+  	
+  	// subsequent likelihood:
+  	if(Visit_pat >1){
+		psi[i] <- gam[i-1]*psi[i-1] + phi[i-1]*(1 - psi[i-1]);
+  	}
+  
+	Y[i] ~ bernoulli(psi[i]);
+  }
+  
   
   
 	
