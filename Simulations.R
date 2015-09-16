@@ -6,6 +6,7 @@
 
 source("sim_func.R")
 require(mnormt) #needed for multivariate normal distrib
+require(lme4) #needed for GLMMs
 
 # Required  custom functions:
 Logit <- function(x){
@@ -33,75 +34,196 @@ head(null)
 # Simulation 1a - Similar strains, corr in gam
 # Methods:
 # - Assign no correlation between strains among hosts in any probabilities
-# - Assign strong positive correlation in within-host gam (i.e. strong facilitatory priority effects)
+# - Assign strong correlation in within-host gam (i.e. strong priority effects)
 # - Assume no effect of across-time covariates
 
 
-Sim1a <- sim_func(n.pat = 100, rwp = 0.8, 
-                  bpat1p = 0, bpat2p = 0, 
-                  bpat1g = 5, bpat2g = 5,
-                  btime1p = 0, btime2p = 0,
-                  btime1g = 0, btime2g = 0)
-Sim1a_null <- sim_func(n.pat = 100, rwp = 0, 
-                       bpat1p = 0, bpat2p = 0, 
-                       bpat1g = 5, bpat2g = 5,
-                       btime1p = 0, btime2p = 0,
-                       btime1g = 0, btime2g = 0)
+nsims <- 100
+ints <- mat.or.vec(nr=nsims,nc=2)
+slops <- mat.or.vec(nr=nsims,nc=2)
+pres <- mat.or.vec(nr=nsims,nc=2)
 
-# Now run a regression to see if we can recover the effect of among-patient covariate
-plot(Y+runif(length(Y), 0,0.35) ~ X.pat.vals, data = subset(Sim1a_null, Strain==1))
-plot(Y+runif(length(Y), 0,0.35) ~ X.pat.vals, data = subset(Sim1a, Strain==1))
+for(i in 1:nsims){
+  Sim <- sim_func(n.pat = 100, rwg = 0.8, 
+                  bpat1g = 3, bpat2g = 3)
+  
+  Sim_null <- sim_func(n.pat = 100, rwg = 0, 
+                       bpat1g = 3, bpat2g = 3)
+  
+  Simnull.mod <- glmer(Y ~ X.pat.vals + (1|Patient), family= binomial, data = subset(Sim_null, Strain==1))
+  Sim.mod <- glmer(Y ~ X.pat.vals + (1|Patient), family= binomial, data = subset(Sim, Strain==1))
+  
+  ints[i,1] <- Simnull.mod@beta[1]
+  ints[i,2] <- Sim.mod@beta[1]
+  
+  slops[i,1] <- Simnull.mod@beta[2]
+  slops[i,2] <- Sim.mod@beta[2]
+  
+  # Pres counts
+  pres[i,1] <- length(which(subset(Sim_null, Strain==1)$Y == 1))
+  pres[i,2] <- length(which(subset(Sim, Strain==1)$Y == 1))
+  
+}
+# White = null, Gray = alternative
+hist(ints[,1], breaks=20)
+hist(ints[,2], breaks=20, add=T, col="gray")
 
-# Pres counts
-length(which(subset(Sim1a_null, Strain==1)$Y == 1))
-length(which(subset(Sim1a, Strain==1)$Y == 1))
+hist(slops[,1], breaks=20)
+hist(slops[,2], breaks=20, add=T, col="gray")
 
-# Patient covariate effects
-library(lme4)
-sim1anull.mod <- glmer(Y ~ X.pat.vals + (1|Patient), family= binomial, data = subset(Sim1a_null, Strain==1))
-sim1anull.mod@beta[1] # Intercept
-sim1anull.mod@beta[2] # Slope
+hist(pres[,1], breaks=20)
+hist(pres[,2], breaks=20, add=T, col="gray")
 
-sim1a.mod <- glmer(Y ~ X.pat.vals + (1|Patient), family= binomial, data = subset(Sim1a, Strain==1))
-sim1a.mod@beta[1] # Intercept
-sim1a.mod@beta[2] # Slope
+
+# Observations:
+# - No obvious effect on pres counts, intercepts or slopes. 
 
 ##############################
 
 # Simulation 1b - Different strains, corr in gam
 # Methods:
 # - Assign no correlation between strains among hosts in any probabilities
-# - Assign strong positive correlation in within-host gam (i.e. strong facilitatory priority effects)
+# - Assign strong correlation in within-host gam (i.e. strong facilitatory priority effects)
 # - Assume no effect of across-time covariates
 
 
-Sim1b <- sim_func(n.pat = 100, rwp = 0.8, 
-                  bpat1p = 0, bpat2p = 0, 
-                  bpat1g = 5, bpat2g = -5,
-                  btime1p = 0, btime2p = 0,
-                  btime1g = 0, btime2g = 0)
-Sim1b_null <- sim_func(n.pat = 100, rwp = 0, 
-                       bpat1p = 0, bpat2p = 0, 
-                       bpat1g = 5, bpat2g = -5,
-                       btime1p = 0, btime2p = 0,
-                       btime1g = 0, btime2g = 0)
+nsims <- 100
+ints <- mat.or.vec(nr=nsims,nc=2)
+slops <- mat.or.vec(nr=nsims,nc=2)
+pres <- mat.or.vec(nr=nsims,nc=2)
 
-# Now run a regression to see if we can recover the effect of among-patient covariate
-plot(Y+runif(length(Y), 0,0.35) ~ X.pat.vals, data = subset(Sim1b_null, Strain==1))
-plot(Y+runif(length(Y), 0,0.35) ~ X.pat.vals, data = subset(Sim1b, Strain==1))
+for(i in 1:nsims){
+  Sim <- sim_func(n.pat = 100, rwg = 0.8, 
+                  bpat1g = 0, bpat2g = -5)
+  
+  Sim_null <- sim_func(n.pat = 100, rwg = 0, 
+                       bpat1g = 0, bpat2g = -5)
+  
+  Simnull.mod <- glmer(Y ~ X.pat.vals + (1|Patient), family= binomial, data = subset(Sim_null, Strain==1))
+  Sim.mod <- glmer(Y ~ X.pat.vals + (1|Patient), family= binomial, data = subset(Sim, Strain==1))
+  
+  ints[i,1] <- Simnull.mod@beta[1]
+  ints[i,2] <- Sim.mod@beta[1]
+  
+  slops[i,1] <- Simnull.mod@beta[2]
+  slops[i,2] <- Sim.mod@beta[2]
+  
+  # Pres counts
+  pres[i,1] <- length(which(subset(Sim_null, Strain==1)$Y == 1))
+  pres[i,2] <- length(which(subset(Sim, Strain==1)$Y == 1))
+  
+}
 
-# Pres counts
-length(which(subset(Sim1b_null, Strain==1)$Y == 1))
-length(which(subset(Sim1b, Strain==1)$Y == 1))
+# White = null, Gray = alternative
+hist(ints[,2], breaks=20)
+hist(ints[,1], breaks=20, add=T, col="gray")
 
-# Patient covariate effects
-library(lme4)
-sim1bnull.mod <- glmer(Y ~ X.pat.vals + (1|Patient), family= binomial, data = subset(Sim1b_null, Strain==1))
-sim1bnull.mod@beta[1] # Intercept
-sim1bnull.mod@beta[2] # Slope
+hist(slops[,1], breaks=20)
+hist(slops[,2], breaks=20, add=T, col="gray")
 
-sim1b.mod <- glmer(Y ~ X.pat.vals + (1|Patient), family= binomial, data = subset(Sim1b, Strain==1))
-sim1b.mod@beta[1] # Intercept
-sim1b.mod@beta[2] # Slope
+hist(pres[,1], breaks=20)
+hist(pres[,2], breaks=20, add=T, col="gray")
 
+
+# Observations:
+# -
+
+
+##############################
+
+# Simulation 1c - Similar strains, corr in phi
+# Methods:
+# - Assign no correlation between strains among hosts in any probabilities
+# - Assign strong positive correlation in within-host phi (i.e. strong facilitatory priority effects)
+# - Assume no effect of across-time covariates
+
+nsims <- 100
+ints <- mat.or.vec(nr=nsims,nc=2)
+slops <- mat.or.vec(nr=nsims,nc=2)
+pres <- mat.or.vec(nr=nsims,nc=2)
+
+for(i in 1:nsims){
+  Sim <- sim_func(n.pat = 100, rwp = 0.8, 
+                  bpat1p = 3, bpat2p = 3)
+  
+  Sim_null <- sim_func(n.pat = 100, rwp = 0, 
+                       bpat1p = 3, bpat2p = 3)
+  
+  Simnull.mod <- glmer(Y ~ X.pat.vals + (1|Patient), family= binomial, data = subset(Sim_null, Strain==1))
+  Sim.mod <- glmer(Y ~ X.pat.vals + (1|Patient), family= binomial, data = subset(Sim, Strain==1))
+  
+  ints[i,1] <- Simnull.mod@beta[1]
+  ints[i,2] <- Sim.mod@beta[1]
+  
+  slops[i,1] <- Simnull.mod@beta[2]
+  slops[i,2] <- Sim.mod@beta[2]
+  
+  # Pres counts
+  pres[i,1] <- length(which(subset(Sim_null, Strain==1)$Y == 1))
+  pres[i,2] <- length(which(subset(Sim, Strain==1)$Y == 1))
+  
+}
+# White = null, Gray = alternative
+hist(ints[,1], breaks=20)
+hist(ints[,2], breaks=20, add=T, col="gray")
+
+hist(slops[,1], breaks=20)
+hist(slops[,2], breaks=20, add=T, col="gray")
+
+hist(pres[,1], breaks=20)
+hist(pres[,2], breaks=20, add=T, col="gray")
+
+##########################################################################################
+##########################################################################################
+
+# Question 2: 
+# Can among-host correlations bias the estimation of 
+# among-host covariate effects for pathogen strains?
+
+# Simulation 2a - Similar strains, corr in gam
+# Methods:
+# - Assign no correlation between strains among hosts in any probabilities
+# - Assign strong correlation in among-host gam (i.e. strong priority effects)
+# - Assume no effect of across-time covariates
+
+
+nsims <- 100
+ints <- mat.or.vec(nr=nsims,nc=2)
+slops <- mat.or.vec(nr=nsims,nc=2)
+pres <- mat.or.vec(nr=nsims,nc=2)
+
+for(i in 1:nsims){
+  Sim <- sim_func(n.pat = 100, rag = 0.8, 
+                  bpat1g = 3, bpat2g = 3)
+  
+  Sim_null <- sim_func(n.pat = 100, rag = 0, 
+                       bpat1g = 3, bpat2g = 3)
+  
+  Simnull.mod <- glmer(Y ~ X.pat.vals + (1|Patient), family= binomial, data = subset(Sim_null, Strain==1))
+  Sim.mod <- glmer(Y ~ X.pat.vals + (1|Patient), family= binomial, data = subset(Sim, Strain==1))
+  
+  ints[i,1] <- Simnull.mod@beta[1]
+  ints[i,2] <- Sim.mod@beta[1]
+  
+  slops[i,1] <- Simnull.mod@beta[2]
+  slops[i,2] <- Sim.mod@beta[2]
+  
+  # Pres counts
+  pres[i,1] <- length(which(subset(Sim_null, Strain==1)$Y == 1))
+  pres[i,2] <- length(which(subset(Sim, Strain==1)$Y == 1))
+  
+}
+# White = null, Gray = alternative
+hist(ints[,1], breaks=20)
+hist(ints[,2], breaks=20, add=T, col="gray")
+
+hist(slops[,1], breaks=20)
+hist(slops[,2], breaks=20, add=T, col="gray")
+
+hist(pres[,1], breaks=20)
+hist(pres[,2], breaks=20, add=T, col="gray")
+
+
+# Observations:
+# - No obvious effect on pres counts, intercepts or slopes. 
 
