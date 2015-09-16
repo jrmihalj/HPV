@@ -1,0 +1,180 @@
+# Function for simulations:
+
+sim_func <- function(n.pat = 100,
+                     n.vis = 10, # this is the mean number of visits
+                     bpat1g = 0, # Within and among host covariate effects for phi and gamma
+                     bpat2g = 0,
+                     btime1g = 0,
+                     btime2g = 0,
+                     bpat1p = 0,
+                     bpat2p = 0,
+                     btime1p = 0,
+                     btime2p = 0,
+                     rag = 0, #rho.across.gamma
+                     rap = 0, #rho.across.phi
+                     rwg = 0, #rho.within.gamma
+                     rwp = 0, #rho.within.phi
+                     sap1 = .4, # sd across patients for each strain (phi and gamma):
+                     sap2 = .4,
+                     sag1 = .4,
+                     sag2 = .4,
+                     swp1 = .4, # sd within patients for each strain (phi and gamma):
+                     swp2 = .4,
+                     swg1 = .4,
+                     swg2 = .4,
+                     globphi = .25, #Global probabilities
+                     globgam = .25, 
+                     globpsi = .6 #First visit mean occ. prob
+  ){
+    
+  n.strains <- 2 #number of HPV strains
+  n.patients <- n.pat #number of patients tested
+  n.visits <- rep(n.vis, n.patients) #number of visits per patient
+  n.obs.perpat <- n.strains*n.visits #number of "tests" per patient
+  n.obs <- sum(n.obs.perpat) #total number of "tests" (One test per strain per patient per visit)
+  
+  # Indices:
+  Strain <- rep(c(1,2), times=n.obs/n.strains) #Strain index
+  Patient <- NULL
+  for(i in 1:n.patients){
+    Patient <- c(Patient, rep(i, times=n.obs.perpat[i]))
+  }
+  # Overall visit:
+  Visit <- rep(1:sum(n.visits), each=n.strains) 
+  # Visit number per patient:
+  Visit.Pat <- NULL
+  for(i in 1:n.patients){
+    Visit.Pat <- c(Visit.Pat, rep(1:n.visits[i], each=n.strains))
+  }
+  
+  # Covariates (centered to mean and scaled to 1 sd):
+  q.pat <- 1 #number of covariates measured at the patient-level (but not over time)
+  q.time <- 1 #number of covariates measured for each patient at each visit
+  
+  X.pat.vals <- NULL
+  for(i in 1:n.patients){
+    X.pat.vals <- c(X.pat.vals, rep(rnorm(1,0,1), times=n.obs.perpat[i]))
+  }
+  
+  X.time.vals <- NULL
+  for(i in 1:n.patients){
+    X.time.vals <- c(X.time.vals, rep(rnorm(n.visits[i],0,1), each=n.strains))
+  }
+  
+  # Covariate responses:
+  beta.pat.phi <- c(bpat1p, bpat2p)
+  beta.time.phi <- c(btime1p, btime2p)
+  beta.pat.gam <- c(bpat1g, bpat2g)
+  beta.time.gam <- c(btime1g, btime2g)
+  
+  #Across-patient std.dev. in persistence for each strain:
+  sig.across.phi.1 <- sap1
+  sig.across.phi.2 <- sap2
+  #Correlation:
+  rho.across.phi <- rap
+  
+  #Covariance matrix:
+  Sig.across.phi <- matrix(
+    c(sig.across.phi.1^2, rho.across.phi*sig.across.phi.1*sig.across.phi.2,
+      rho.across.phi*sig.across.phi.1*sig.across.phi.2, sig.across.phi.2^2),
+    ncol=2
+  )
+  
+  #Across-patient std.dev. in colonization for each strain:
+  sig.across.gam.1 <- sag1
+  sig.across.gam.2 <- sag2
+  #Correlation:
+  rho.across.gam <- rag
+  
+  #Covariance matrix:
+  Sig.across.gam <- matrix(
+    c(sig.across.gam.1^2, rho.across.gam*sig.across.gam.1*sig.across.gam.2,
+      rho.across.gam*sig.across.gam.1*sig.across.gam.2, sig.across.gam.2^2),
+    ncol=2
+  )
+  
+  ##############################
+  # Within-patient covariances:
+  
+  #Within-patient std.dev. in persistence for each strain:
+  sig.within.phi.1 <- swp1
+  sig.within.phi.2 <- swp2
+  #Correlation:
+  rho.within.phi <- rwp
+  
+  #Covariance matrix:
+  Sig.within.phi <- matrix(
+    c(sig.within.phi.1^2, rho.within.phi*sig.within.phi.1*sig.within.phi.2,
+      rho.within.phi*sig.within.phi.1*sig.within.phi.2, sig.within.phi.2^2),
+    ncol=2
+  )
+  
+  #within-patient std.dev. in colonization for each strain:
+  sig.within.gam.1 <- swg1
+  sig.within.gam.2 <- swg2
+  #Correlation:
+  rho.within.gam <- rwp
+  
+  #Covariance matrix:
+  Sig.within.gam <- matrix(
+    c(sig.within.gam.1^2, rho.within.gam*sig.within.gam.1*sig.within.gam.2,
+      rho.within.gam*sig.within.gam.1*sig.within.gam.2, sig.within.gam.2^2),
+    ncol=2
+  )
+  
+  # Draw the random effects:
+  b.0.phi <- rmnorm(n.patients, mean=rep(0,n.strains), varcov=Sig.across.phi) 
+  b.0.gam <- rmnorm(n.patients, mean=rep(0,n.strains), varcov=Sig.across.gam)
+  
+  b.1t.phi <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.within.phi)
+  b.1t.gam <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.within.gam)
+  
+  # Calculate phis and gammas:
+  phi <- NULL
+  gam <- NULL
+  
+  # We need to assign the global mean values for phi and gamma
+  mean.phi <- Logit(globphi)
+  mean.gam <- Logit(globgam)
+  
+  # Formula from our model:
+  # (phi/gamma) <- global_mean + intercept_among + covariate_among + 
+  #                     intercept_within + covariate_within
+  for(i in 1:n.obs){
+    phi[i] <- mean.phi + b.0.phi[Patient[i],Strain[i]] + beta.pat.phi[Strain[i]] * X.pat.vals[i] + 
+      b.1t.phi[Visit[i],Strain[i]] + beta.time.phi[Strain[i]] * X.time.vals[i]
+    gam[i] <- mean.gam + b.0.gam[Patient[i],Strain[i]] + beta.pat.gam[Strain[i]] * X.pat.vals[i] + 
+      b.1t.gam[Visit[i],Strain[i]] + beta.time.gam[Strain[i]] * X.time.vals[i]
+  }
+
+  
+  # First we need the initial occurrence probability for each strain for each patient.
+  # We assume this probability is not influenced by covariates, but this assumption
+  # could be relaxed in the future. Instead we assume the initial probabilities are
+  # generated randomly from a global occurrence probability.
+  
+  psi.mean <- Logit(globpsi)
+  
+  # Calculate AntiLogit for phi and gam
+  lphi <- AntiLogit(phi)
+  lgam <- AntiLogit(gam)
+  
+  psi <- NULL
+  for(i in 1:n.obs){
+    
+    if(Visit.Pat[i]==1){ # If it's the patient's first visit
+      psi[i] <- AntiLogit(rnorm(1,psi.mean,.2))
+    }else{
+      psi[i] <- lgam[i-n.strains] * psi[i-n.strains] + lphi[i-n.strains] * (1 - psi[i-n.strains]) 
+    }
+    
+  }
+  
+  Y <- NULL
+  Y <- rbinom(n.obs, 1, psi)
+  
+  # Create a data.frame
+  Occ <- data.frame(Y, Strain, Patient, Visit.Pat, X.time.vals, X.pat.vals)
+  
+  return(Occ)
+}
