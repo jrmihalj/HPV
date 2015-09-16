@@ -2,14 +2,14 @@
 
 sim_func <- function(n.pat = 100,
                      n.vis = 10, # this is the mean number of visits
-                     bpat1g = .15, # Within and among host covariate effects for phi and gamma
-                     bpat2g = .15,
-                     btime1g = .15,
-                     btime2g = .15,
-                     bpat1p = .15,
-                     bpat2p = .15,
-                     btime1p = .15,
-                     btime2p = .15,
+                     bpat1g = 0, # Within and among host covariate effects for phi and gamma
+                     bpat2g = 0,
+                     btime1g = 0,
+                     btime2g = 0,
+                     bpat1p = 0,
+                     bpat2p = 0,
+                     btime1p = 0,
+                     btime2p = 0,
                      rag = 0, #rho.across.gamma
                      rap = 0, #rho.across.phi
                      rwg = 0, #rho.within.gamma
@@ -22,8 +22,8 @@ sim_func <- function(n.pat = 100,
                      swp2 = .4,
                      swg1 = .4,
                      swg2 = .4,
-                     globphi = .4, #Global probabilities
-                     globgam = .4, 
+                     globphi = .25, #Global probabilities
+                     globgam = .25, 
                      globpsi = .6 #First visit mean occ. prob
   ){
     
@@ -146,6 +146,7 @@ sim_func <- function(n.pat = 100,
     gam[i] <- mean.gam + b.0.gam[Patient[i],Strain[i]] + beta.pat.gam[Strain[i]] * X.pat.vals[i] + 
       b.1t.gam[Visit[i],Strain[i]] + beta.time.gam[Strain[i]] * X.time.vals[i]
   }
+
   
   # First we need the initial occurrence probability for each strain for each patient.
   # We assume this probability is not influenced by covariates, but this assumption
