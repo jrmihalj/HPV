@@ -1,8 +1,9 @@
 # Function for simulations:
 
 sim_func <- function(n.pat = 100,
-                     n.vis = 10, # this is the mean number of visits
-                     bpat1g = 0, # Within and among host covariate effects for phi and gamma
+                     n.vis = 10, 
+                     # Within and among host covariate effects for phi and gamma:
+                     bpat1g = 0, 
                      bpat2g = 0,
                      btime1g = 0,
                      btime2g = 0,
@@ -14,17 +15,20 @@ sim_func <- function(n.pat = 100,
                      rap = 0, #rho.across.phi
                      rwg = 0, #rho.within.gamma
                      rwp = 0, #rho.within.phi
-                     sap1 = 1, # sd across patients for each strain (phi and gamma):
-                     sap2 = 1,
-                     sag1 = 1,
-                     sag2 = 1,
-                     swp1 = 1, # sd within patients for each strain (phi and gamma):
-                     swp2 = 1,
-                     swg1 = 1,
-                     swg2 = 1,
-                     globphi = .25, #Global probabilities
-                     globgam = .25, 
-                     globpsi = .6 #First visit mean occ. prob
+                     # sd across patients for each strain (phi and gamma):
+                     sap1 = .6, 
+                     sap2 = .6,
+                     sag1 = .6,
+                     sag2 = .6,
+                     # sd within patients for each strain (phi and gamma):
+                     swp1 = .2, 
+                     swp2 = .2,
+                     swg1 = .2,
+                     swg2 = .2,
+                     #Global probabilities:
+                     globphi = .45, 
+                     globgam = .45, 
+                     globpsi = .45 
   ){
   
   n.strains <- 2 #number of HPV strains
@@ -83,13 +87,14 @@ sim_func <- function(n.pat = 100,
   sig.within.gam.1 <- swg1
   sig.within.gam.2 <- swg2
   
-  
-  # We need to assign the global mean values
+  #assign the global mean values
   mean.phi <- Logit(globphi)
   mean.gam <- Logit(globgam)
-  psi.mean <- Logit(globpsi)
+  mean.psi <- Logit(globpsi)
   
-  for(i in 1:2){ # For Null and Alternative:
+  Y_Alt <- NULL
+  Y_Null <- NULL
+  for(i in 1:2){ # For Alternative (i=1) and Null (i =2):
     
     #Correlation:
     if(i == 1) {rho.across.phi <- rap} else {rho.across.phi <- 0}
@@ -122,7 +127,7 @@ sim_func <- function(n.pat = 100,
     )
     
     #Correlation:
-    if(i == 1) {rho.within.gam <- rwp} else {rho.within.gam <- 0}
+    if(i == 1) {rho.within.gam <- rwg} else {rho.within.gam <- 0}
     
     #Covariance matrix:
     Sig.within.gam <- matrix(
@@ -166,7 +171,7 @@ sim_func <- function(n.pat = 100,
     for(j in 1:n.obs){
       
       if(Visit.Pat[j]==1){ # If it's the patient's first visit
-        psi[j] <- AntiLogit(rnorm(1,psi.mean,.2))
+        psi[j] <- AntiLogit(rnorm(1,mean.psi,.2))
       }else{
         psi[j] <- lphi[j-n.strains] * psi[j-n.strains] + lgam[j-n.strains] * (1 - psi[j-n.strains]) 
       }
@@ -174,11 +179,14 @@ sim_func <- function(n.pat = 100,
     }
     
     if(i == 1) {
-      Y_Alt <- NULL
-      Y_Alt <- rbinom(n.obs, 1, psi)} 
-      else {
-        Y_Null <- NULL
-        Y_Null <- rbinom(n.obs, 1, psi)}
+      for(z in 1:n.obs){
+        Y_Alt[z] <- rbinom(1, 1, psi[z])
+      }
+      }else{
+        for(z in 1:n.obs){
+          Y_Null[z] <- rbinom(1, 1, psi[z])
+        }
+      }
   }
   
   
