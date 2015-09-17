@@ -250,7 +250,7 @@ for(i in 1:n.obs){
   if(Visit.Pat[i]==1){ # If it's the patient's first visit
     psi[i] <- AntiLogit(rnorm(1,psi.mean,.2))
   }else{
-    psi[i] <- lgam[i-2] * psi[i-2] + lphi[i-2] * (1 - psi[i-2]) 
+    psi[i] <- lphi[i-2] * psi[i-2] + lgam[i-2] * (1 - psi[i-2]) 
   }
   
 }
