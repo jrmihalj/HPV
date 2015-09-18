@@ -16,19 +16,19 @@ sim_func <- function(n.pat = 100,
                      rwg = 0, #rho.within.gamma
                      rwp = 0, #rho.within.phi
                      # sd across patients for each strain (phi and gamma):
-                     sap1 = .6, 
-                     sap2 = .6,
-                     sag1 = .6,
-                     sag2 = .6,
+                     sap1 = 1, 
+                     sap2 = 1,
+                     sag1 = 1,
+                     sag2 = 1,
                      # sd within patients for each strain (phi and gamma):
-                     swp1 = .2, 
-                     swp2 = .2,
-                     swg1 = .2,
-                     swg2 = .2,
+                     swp1 = .4, 
+                     swp2 = .4,
+                     swg1 = .4,
+                     swg2 = .4,
                      #Global probabilities:
-                     globphi = .45, 
-                     globgam = .45, 
-                     globpsi = .45 
+                     globphi = .5, 
+                     globgam = .5, 
+                     globpsi = .5 
   ){
   
   n.strains <- 2 #number of HPV strains
@@ -92,106 +92,98 @@ sim_func <- function(n.pat = 100,
   mean.gam <- Logit(globgam)
   mean.psi <- Logit(globpsi)
   
-  Y_Alt <- NULL
-  Y_Null <- NULL
-  for(i in 1:2){ # For Alternative (i=1) and Null (i =2):
-    
-    #Correlation:
-    if(i == 1) {rho.across.phi <- rap} else {rho.across.phi <- 0}
-    
-    #Covariance matrix:
-    Sig.across.phi <- matrix(
-      c(sig.across.phi.1^2, rho.across.phi*sig.across.phi.1*sig.across.phi.2,
-        rho.across.phi*sig.across.phi.1*sig.across.phi.2, sig.across.phi.2^2),
-      ncol=2
-    )
-    
-    #Correlation:
-    if(i == 1) {rho.across.gam <- rag} else {rho.across.gam <- 0}
-    
-    #Covariance matrix:
-    Sig.across.gam <- matrix(
-      c(sig.across.gam.1^2, rho.across.gam*sig.across.gam.1*sig.across.gam.2,
-        rho.across.gam*sig.across.gam.1*sig.across.gam.2, sig.across.gam.2^2),
-      ncol=2
-    )
-    
-    #Correlation:
-    if(i == 1) {rho.within.phi <- rwp} else {rho.within.phi <- 0}
-    
-    #Covariance matrix:
-    Sig.within.phi <- matrix(
-      c(sig.within.phi.1^2, rho.within.phi*sig.within.phi.1*sig.within.phi.2,
-        rho.within.phi*sig.within.phi.1*sig.within.phi.2, sig.within.phi.2^2),
-      ncol=2
-    )
-    
-    #Correlation:
-    if(i == 1) {rho.within.gam <- rwg} else {rho.within.gam <- 0}
-    
-    #Covariance matrix:
-    Sig.within.gam <- matrix(
-      c(sig.within.gam.1^2, rho.within.gam*sig.within.gam.1*sig.within.gam.2,
-        rho.within.gam*sig.within.gam.1*sig.within.gam.2, sig.within.gam.2^2),
-      ncol=2
-    )
-    
-    # Draw the random effects:
-    b.0.phi <- rmnorm(n.patients, mean=rep(0,n.strains), varcov=Sig.across.phi) 
-    b.0.gam <- rmnorm(n.patients, mean=rep(0,n.strains), varcov=Sig.across.gam)
-    
-    b.1t.phi <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.within.phi)
-    b.1t.gam <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.within.gam)
-    
-    # Calculate phis and gammas:
-    phi <- NULL
-    gam <- NULL
-    
-    # Formula from our model:
-    # (phi/gamma) <- global_mean + intercept_among + covariate_among + 
-    #                     intercept_within + covariate_within
-    for(j in 1:n.obs){
-      phi[j] <- mean.phi + b.0.phi[Patient[j],Strain[j]] + beta.pat.phi[Strain[j]] * X.pat.vals[j] + 
-        b.1t.phi[Visit[j],Strain[j]] + beta.time.phi[Strain[j]] * X.time.vals[j]
-      gam[j] <- mean.gam + b.0.gam[Patient[j],Strain[j]] + beta.pat.gam[Strain[j]] * X.pat.vals[j] + 
-        b.1t.gam[Visit[j],Strain[j]] + beta.time.gam[Strain[j]] * X.time.vals[j]
-    }
-    
-    
-    # First we need the initial occurrence probability for each strain for each patient.
-    # We assume this probability is not influenced by covariates, but this assumption
-    # could be relaxed in the future. Instead we assume the initial probabilities are
-    # generated randomly from a global occurrence probability.
-    
-    # Calculate AntiLogit for phi and gam
-    lphi <- AntiLogit(phi)
-    lgam <- AntiLogit(gam)
-    
-    psi <- NULL
-    for(j in 1:n.obs){
-      
-      if(Visit.Pat[j]==1){ # If it's the patient's first visit
-        psi[j] <- AntiLogit(rnorm(1,mean.psi,.2))
-      }else{
-        psi[j] <- lphi[j-n.strains] * psi[j-n.strains] + lgam[j-n.strains] * (1 - psi[j-n.strains]) 
-      }
-      
-    }
-    
-    if(i == 1) {
-      for(z in 1:n.obs){
-        Y_Alt[z] <- rbinom(1, 1, psi[z])
-      }
-      }else{
-        for(z in 1:n.obs){
-          Y_Null[z] <- rbinom(1, 1, psi[z])
-        }
-      }
+  
+  #Correlation:
+  rho.across.phi <- rap
+  
+  #Covariance matrix:
+  Sig.across.phi <- matrix(
+    c(sig.across.phi.1^2, rho.across.phi*sig.across.phi.1*sig.across.phi.2,
+      rho.across.phi*sig.across.phi.1*sig.across.phi.2, sig.across.phi.2^2),
+    ncol=2
+  )
+  
+  #Correlation:
+  rho.across.gam <- rag
+  
+  #Covariance matrix:
+  Sig.across.gam <- matrix(
+    c(sig.across.gam.1^2, rho.across.gam*sig.across.gam.1*sig.across.gam.2,
+      rho.across.gam*sig.across.gam.1*sig.across.gam.2, sig.across.gam.2^2),
+    ncol=2
+  )
+  
+  #Correlation:
+  rho.within.phi <- rwp
+  
+  #Covariance matrix:
+  Sig.within.phi <- matrix(
+    c(sig.within.phi.1^2, rho.within.phi*sig.within.phi.1*sig.within.phi.2,
+      rho.within.phi*sig.within.phi.1*sig.within.phi.2, sig.within.phi.2^2),
+    ncol=2
+  )
+  
+  #Correlation:
+  rho.within.gam <- rwg
+  
+  #Covariance matrix:
+  Sig.within.gam <- matrix(
+    c(sig.within.gam.1^2, rho.within.gam*sig.within.gam.1*sig.within.gam.2,
+      rho.within.gam*sig.within.gam.1*sig.within.gam.2, sig.within.gam.2^2),
+    ncol=2
+  )
+  
+  # Draw the random effects:
+  b.0.phi <- rmnorm(n.patients, mean=rep(0,n.strains), varcov=Sig.across.phi) 
+  b.0.gam <- rmnorm(n.patients, mean=rep(0,n.strains), varcov=Sig.across.gam)
+  
+  b.1t.phi <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.within.phi)
+  b.1t.gam <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.within.gam)
+  
+  # Calculate phis and gammas:
+  phi <- NULL
+  gam <- NULL
+  
+  # Formula from our model:
+  # (phi/gamma) <- global_mean + intercept_among + covariate_among + 
+  #                     intercept_within + covariate_within
+  for(j in 1:n.obs){
+    phi[j] <- mean.phi + b.0.phi[Patient[j],Strain[j]] + beta.pat.phi[Strain[j]] * X.pat.vals[j] + 
+      b.1t.phi[Visit[j],Strain[j]] + beta.time.phi[Strain[j]] * X.time.vals[j]
+    gam[j] <- mean.gam + b.0.gam[Patient[j],Strain[j]] + beta.pat.gam[Strain[j]] * X.pat.vals[j] + 
+      b.1t.gam[Visit[j],Strain[j]] + beta.time.gam[Strain[j]] * X.time.vals[j]
   }
   
   
+  # First we need the initial occurrence probability for each strain for each patient.
+  # We assume this probability is not influenced by covariates, but this assumption
+  # could be relaxed in the future. Instead we assume the initial probabilities are
+  # generated randomly from a global occurrence probability.
+  
+  # Calculate AntiLogit for phi and gam
+  lphi <- AntiLogit(phi)
+  lgam <- AntiLogit(gam)
+  
+  psi <- NULL
+  for(j in 1:n.obs){
+    
+    if(Visit.Pat[j]==1){ # If it's the patient's first visit
+      psi[j] <- AntiLogit(rnorm(1,mean.psi,.2))
+    }else{
+      psi[j] <- lphi[j-n.strains] * psi[j-n.strains] + lgam[j-n.strains] * (1 - psi[j-n.strains]) 
+    }
+    
+  }
+  
+  Y <- NULL
+  for(z in 1:n.obs){
+    Y[z] <- rbinom(1, 1, psi[z])
+  }
+  
+  
+  
   # Create a data.frame
-  Occ <- data.frame(Y_Alt, Y_Null, Strain, Patient, Visit.Pat, X.time.vals, X.pat.vals)
+  Occ <- data.frame(Y, psi, lphi, lgam, Strain, Patient, Visit.Pat, X.time.vals, X.pat.vals)
   
   return(Occ)
 }
