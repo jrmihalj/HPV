@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014) (preloaded format=pdflatex 2014.5.25)  17 SEP 2015 11:43
+This is pdfTeX, Version 3.14159265-2.6-1.40.15 (TeX Live 2014) (preloaded format=pdflatex 2014.5.25)  22 SEP 2015 11:32
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -233,15 +233,15 @@ LaTeX Font Info:    ... okay on input line 10.
 * layout: <same size as paper>
 * layoutoffset:(h,v)=(0.0pt,0.0pt)
 * modes: 
-* h-part:(L,W,R)=(72.26999pt, 469.75502pt, 72.26999pt)
-* v-part:(T,H,B)=(72.26999pt, 867.24002pt, 72.26999pt)
+* h-part:(L,W,R)=(54.2025pt, 505.89pt, 54.2025pt)
+* v-part:(T,H,B)=(54.2025pt, 903.375pt, 54.2025pt)
 * \paperwidth=614.295pt
 * \paperheight=1011.78pt
-* \textwidth=469.75502pt
-* \textheight=867.24002pt
-* \oddsidemargin=0.0pt
-* \evensidemargin=0.0pt
-* \topmargin=-37.0pt
+* \textwidth=505.89pt
+* \textheight=903.375pt
+* \oddsidemargin=-18.06749pt
+* \evensidemargin=-18.06749pt
+* \topmargin=-55.06749pt
 * \headheight=12.0pt
 * \headsep=25.0pt
 * \topskip=10.0pt
@@ -327,60 +327,75 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <7> on input line 22.
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <5> on input line 22.
- [1
+
+Overfull \hbox (5.1043pt too wide) in paragraph at lines 55--56
+\T1/aer/m/n/10 ates, $\OT1/cmr/m/n/10 (1\OML/cmm/m/it/10 ; :::; r \OMS/cmsy/m/n
+/10 ^^@ \OT1/cmr/m/n/10 1)$\T1/aer/m/n/10 , that were mea-sured at the patient-
+level. How-ever, these co-vari-ates, $[][] \OT1/cmr/m/n/10 = (1\OML/cmm/m/it/10
+ ; x[]; x[]; [] ; x[]\OT1/cmr/m/n/10 )$\T1/aer/m/n/10 ,
+ []
+
+[1
 
 {/usr/local/texlive/2014/texmf-var/fonts/map/pdftex/updmap/pdftex.map}]
-LaTeX Font Info:    Try loading font information for T1+aett on input line 77.
+LaTeX Font Info:    Try loading font information for T1+aett on input line 79.
 
 (/usr/local/texlive/2014/texmf-dist/tex/latex/ae/t1aett.fd
 File: t1aett.fd 1997/11/16 Font definitions for T1/aett.
-) [2] [3]
-LaTeX Font Info:    Try loading font information for TS1+aett on input line 244
-.
-
-(/Library/Frameworks/R.framework/Resources/share/texmf/tex/latex/ts1aett.fd
-File: ts1aett.fd 
 )
-LaTeX Font Info:    Try loading font information for TS1+cmtt on input line 244
-.
+<ReadMe-002.pdf, id=19, 650.43pt x 216.81pt>
+File: ReadMe-002.pdf Graphic file (type pdf)
+ <use ReadMe-002.pdf>
+Package pdftex.def Info: ReadMe-002.pdf used on input line 117.
+(pdftex.def)             Requested size: 404.71353pt x 134.90712pt.
+ [2]
+<ReadMe-004.pdf, id=26, 650.43pt x 216.81pt>
+File: ReadMe-004.pdf Graphic file (type pdf)
+ <use ReadMe-004.pdf>
+Package pdftex.def Info: ReadMe-004.pdf used on input line 128.
+(pdftex.def)             Requested size: 404.71353pt x 134.90712pt.
 
-(/usr/local/texlive/2014/texmf-dist/tex/latex/base/ts1cmtt.fd
-File: ts1cmtt.fd 1999/05/25 v2.5h Standard LaTeX font definitions
-)
-LaTeX Font Info:    Font shape `TS1/aett/m/sl' in size <10> not available
-(Font)              Font shape `TS1/cmtt/m/sl' tried instead on input line 244.
+<ReadMe-006.pdf, id=27, 650.43pt x 216.81pt>
+File: ReadMe-006.pdf Graphic file (type pdf)
+ <use ReadMe-006.pdf>
+Package pdftex.def Info: ReadMe-006.pdf used on input line 140.
+(pdftex.def)             Requested size: 404.71353pt x 134.90712pt.
 
- [4]
+<ReadMe-008.pdf, id=28, 578.16pt x 289.08pt>
+File: ReadMe-008.pdf Graphic file (type pdf)
+ <use ReadMe-008.pdf>
+Package pdftex.def Info: ReadMe-008.pdf used on input line 153.
+(pdftex.def)             Requested size: 404.71353pt x 202.35461pt.
+ [3 <./ReadMe-002.pdf> <./ReadMe-004.pdf> <./ReadMe-006.pdf> <./ReadMe-008.pdf>
+]
 (./ReadMe.aux) ) 
 Here is how much of TeX's memory you used:
- 3208 strings out of 493117
- 47009 string characters out of 6135433
- 110051 words of memory out of 5000000
- 6595 multiletter control sequences out of 15000+600000
- 26187 words of font info for 57 fonts, out of 8000000 for 9000
+ 3203 strings out of 493117
+ 46318 string characters out of 6135433
+ 112077 words of memory out of 5000000
+ 6592 multiletter control sequences out of 15000+600000
+ 25889 words of font info for 56 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 37i,9n,29p,916b,279s stack positions out of 5000i,500n,10000p,200000b,80000s
-{/usr/local/texlive/2014/texmf-dist/fonts/enc/dvips/cm-super/cm
--super-ts1.enc}</usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/
-cm/cmbx10.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/c
-m/cmbx12.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm
-/cmex10.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/
-cmmi10.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/c
-mmi5.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmm
-i7.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmr10
-.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.p
-fb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pfb
-></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb></
-usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></usr
-/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmsltt10.pfb></us
-r/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></usr
-/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/l
-ocal/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb></usr/lo
-cal/texlive/2014/texmf-dist/fonts/type1/public/cm-super/sfst1000.pfb>
-Output written on ReadMe.pdf (4 pages, 176476 bytes).
+ 37i,9n,29p,916b,192s stack positions out of 5000i,500n,10000p,200000b,80000s
+</usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts
+/cm/cmbx10.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/
+cm/cmbx12.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/c
+m/cmex10.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm
+/cmmi10.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/
+cmmi5.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cm
+mi7.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmr1
+0.pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.
+pfb></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmr17.pf
+b></usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmr5.pfb><
+/usr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmr7.pfb></us
+r/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmsltt10.pfb></u
+sr/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy10.pfb></us
+r/local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy5.pfb></usr/
+local/texlive/2014/texmf-dist/fonts/type1/public/amsfonts/cm/cmti10.pfb>
+Output written on ReadMe.pdf (3 pages, 722962 bytes).
 PDF statistics:
- 83 PDF objects out of 1000 (max. 8388607)
- 59 compressed objects within 1 object stream
+ 103 PDF objects out of 1000 (max. 8388607)
+ 73 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
- 5 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 25 words of extra memory for PDF output out of 10000 (max. 10000000)
 

@@ -1,5 +1,19 @@
 # Function for simulations:
 
+require(mnormt) #needed for multivariate normal distrib
+require(tidyr)
+require(dplyr)
+
+
+# Required  custom functions:
+Logit <- function(x){
+  log(x) - log(1 - x)
+}
+
+AntiLogit <- function(x){
+  exp(x) / (exp(x) + 1)
+}
+
 sim_func <- function(n.pat = 100,
                      n.vis = 10, 
                      # Within and among host covariate effects for phi and gamma:
