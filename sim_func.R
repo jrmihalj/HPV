@@ -25,20 +25,27 @@ sim_func <- function(n.pat = 100,
                      bpat2p = 0,
                      btime1p = 0,
                      btime2p = 0,
-                     rag = 0, #rho.across.gamma
-                     rap = 0, #rho.across.phi
-                     rwg = 0, #rho.within.gamma
-                     rwp = 0, #rho.within.phi
+                     # Correlations:
+                     ## Among-patients:
+                     raG1G2 = 0,
+                     raP1P2 = 0, 
+                     raP1G1 = 0,
+                     raP2G2 = 0,
+                     raP1G2 = 0,
+                     raP2G1 = 0,
+                     ## Within-patients:
+                     rwG1G2 = 0,
+                     rwP1P2 = 0, 
+                     rwP1G1 = 0,
+                     rwP2G2 = 0,
+                     rwP1G2 = 0,
+                     rwP2G1 = 0,
                      # sd across patients for each strain (phi and gamma):
-                     sap1 = 1, 
-                     sap2 = 1,
-                     sag1 = 1,
-                     sag2 = 1,
+                     # Assume all sd equal
+                     sa = 1,
                      # sd within patients for each strain (phi and gamma):
-                     swp1 = .4, 
-                     swp2 = .4,
-                     swg1 = .4,
-                     swg2 = .4,
+                     # Assume all sd equal
+                     sw = .4,
                      #Global probabilities:
                      globphi = .5, 
                      globgam = .5, 
@@ -85,86 +92,61 @@ sim_func <- function(n.pat = 100,
   beta.pat.gam <- c(bpat1g, bpat2g)
   beta.time.gam <- c(btime1g, btime2g)
   
-  #Across-patient std.dev. in persistence for each strain:
-  sig.across.phi.1 <- sap1
-  sig.across.phi.2 <- sap2
-  
-  #Across-patient std.dev. in colonization for each strain:
-  sig.across.gam.1 <- sag1
-  sig.across.gam.2 <- sag2
-  
-  #Within-patient std.dev. in persistence for each strain:
-  sig.within.phi.1 <- swp1
-  sig.within.phi.2 <- swp2
-  
-  #within-patient std.dev. in colonization for each strain:
-  sig.within.gam.1 <- swg1
-  sig.within.gam.2 <- swg2
-  
-  #assign the global mean values
+  #Assign the global mean values
   mean.phi <- Logit(globphi)
   mean.gam <- Logit(globgam)
   mean.psi <- Logit(globpsi)
   
+  #Correlations:
   
-  #Correlation:
-  rho.across.phi <- rap
+  ## Among-patients:
   
   #Covariance matrix:
-  Sig.across.phi <- matrix(
-    c(sig.across.phi.1^2, rho.across.phi*sig.across.phi.1*sig.across.phi.2,
-      rho.across.phi*sig.across.phi.1*sig.across.phi.2, sig.across.phi.2^2),
-    ncol=2
+  #Phi1, Phi2, Gamma1, Gamma2 = columns
+  Sig.across <- matrix(
+    c(sa^2, raP1P2*sa^2, raP1G1*sa^2, raP1G2*sa^2,
+      raP1P2*sa^2, sa^2, raP2G1*sa^2, raP2G2*sa^2,
+      raP1G1*sa^2, raP2G1*sa^2, sa^2, raG1G2*sa^2,
+      raP1G2*sa^2, raP2G2*sa^2, raG1G2*sa^2, sa^2),
+    ncol=4
   )
   
-  #Correlation:
-  rho.across.gam <- rag
+  ## Within-patients:
   
   #Covariance matrix:
-  Sig.across.gam <- matrix(
-    c(sig.across.gam.1^2, rho.across.gam*sig.across.gam.1*sig.across.gam.2,
-      rho.across.gam*sig.across.gam.1*sig.across.gam.2, sig.across.gam.2^2),
-    ncol=2
-  )
+  #Phi1, Phi2, Gamma1, Gamma2 = columns
   
-  #Correlation:
-  rho.within.phi <- rwp
-  
-  #Covariance matrix:
-  Sig.within.phi <- matrix(
-    c(sig.within.phi.1^2, rho.within.phi*sig.within.phi.1*sig.within.phi.2,
-      rho.within.phi*sig.within.phi.1*sig.within.phi.2, sig.within.phi.2^2),
-    ncol=2
-  )
-  
-  #Correlation:
-  rho.within.gam <- rwg
-  
-  #Covariance matrix:
-  Sig.within.gam <- matrix(
-    c(sig.within.gam.1^2, rho.within.gam*sig.within.gam.1*sig.within.gam.2,
-      rho.within.gam*sig.within.gam.1*sig.within.gam.2, sig.within.gam.2^2),
-    ncol=2
+  Sig.within <- matrix(
+    c(sw^2, rwP1P2*sw^2, rwP1G1*sw^2, rwP1G2*sw^2,
+      rwP1P2*sw^2, sw^2, rwP2G1*sw^2, rwP2G2*sw^2,
+      rwP1G1*sw^2, rwP2G1*sw^2, sw^2, rwG1G2*sw^2,
+      rwP1G2*sw^2, rwP2G2*sw^2, rwG1G2*sw^2, sw^2),
+    ncol=4
   )
   
   # Draw the random effects:
-  b.0.phi <- rmnorm(n.patients, mean=rep(0,n.strains), varcov=Sig.across.phi) 
-  b.0.gam <- rmnorm(n.patients, mean=rep(0,n.strains), varcov=Sig.across.gam)
+  # Phi1, Phi2, Gamma1, Gamma2 = columns
+  random.across <- rmnorm(n.patients, mean = rep(0, n.strains*2), varcov=Sig.across)
+  random.within <- rmnorm(sum(n.visits), mean = rep(0, n.strains*2), varcov=Sig.within)
   
-  b.1t.phi <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.within.phi)
-  b.1t.gam <- rmnorm(sum(n.visits), mean=rep(0,n.strains), varcov=Sig.within.gam)
+  # Store the random effects, for ease below:
+  b.0.phi <- random.across[,1:2]
+  b.0.gam <- random.across[,3:4]
+  
+  b.1t.phi <- random.within[,1:2]
+  b.1t.gam <- random.within[,3:4]
   
   # Calculate phis and gammas:
-  phi <- NULL
-  gam <- NULL
+  lphi <- NULL
+  lgam <- NULL
   
   # Formula from our model:
   # (phi/gamma) <- global_mean + intercept_among + covariate_among + 
   #                     intercept_within + covariate_within
   for(j in 1:n.obs){
-    phi[j] <- mean.phi + b.0.phi[Patient[j],Strain[j]] + beta.pat.phi[Strain[j]] * X.pat.vals[j] + 
+    lphi[j] <- mean.phi + b.0.phi[Patient[j],Strain[j]] + beta.pat.phi[Strain[j]] * X.pat.vals[j] + 
       b.1t.phi[Visit[j],Strain[j]] + beta.time.phi[Strain[j]] * X.time.vals[j]
-    gam[j] <- mean.gam + b.0.gam[Patient[j],Strain[j]] + beta.pat.gam[Strain[j]] * X.pat.vals[j] + 
+    lgam[j] <- mean.gam + b.0.gam[Patient[j],Strain[j]] + beta.pat.gam[Strain[j]] * X.pat.vals[j] + 
       b.1t.gam[Visit[j],Strain[j]] + beta.time.gam[Strain[j]] * X.time.vals[j]
   }
   
@@ -175,8 +157,8 @@ sim_func <- function(n.pat = 100,
   # generated randomly from a global occurrence probability.
   
   # Calculate AntiLogit for phi and gam
-  lphi <- AntiLogit(phi)
-  lgam <- AntiLogit(gam)
+  phi <- AntiLogit(lphi)
+  gam <- AntiLogit(lgam)
   
   psi <- NULL
   for(j in 1:n.obs){
@@ -184,7 +166,7 @@ sim_func <- function(n.pat = 100,
     if(Visit.Pat[j]==1){ # If it's the patient's first visit
       psi[j] <- AntiLogit(rnorm(1,mean.psi,.2))
     }else{
-      psi[j] <- lphi[j-n.strains] * psi[j-n.strains] + lgam[j-n.strains] * (1 - psi[j-n.strains]) 
+      psi[j] <- phi[j-n.strains] * psi[j-n.strains] + gam[j-n.strains] * (1 - psi[j-n.strains]) 
     }
     
   }
@@ -197,7 +179,7 @@ sim_func <- function(n.pat = 100,
   
   
   # Create a data.frame
-  Occ <- data.frame(Y, psi, lphi, lgam, Strain, Patient, Visit.Pat, X.time.vals, X.pat.vals)
+  Occ <- data.frame(Y, psi, phi, gam, Strain, Patient, Visit.Pat, X.time.vals, X.pat.vals)
   
   return(Occ)
 }
