@@ -47,7 +47,7 @@ out <- list()
 
 for(i in 1:n.sims){
   
-  Sim <- sim_func(n.pat = 100, rag = -.9, rap = 0, rwg = 0, rwp = 0, 
+  Sim <- sim_func(n.pat = 200, rag = 0, rap = .9, rwg = 0, rwp = 0.9, 
                   bpat1p = 0, bpat2p = 0)
   
   # Run null model analysis:
@@ -80,27 +80,14 @@ hist(coinf, breaks=20)
 ##########################################################################################
 ##########################################################################################
 
-# Question 2: 
-# How do among-host correlations affect coinfection?
 
-# Simulation 1a - Similar/different strains, corr in phi (persistence)
-# Methods:
-# - Assign no among-host correlations
-# - Assign strong within-host correlation in phi (i.e. strong competition/facilitation)
-# - Assume no effect of covariates
+# covariates:
 
+#Strong correlations:
+test <- sim_func(n.pat = 100, bpat2g=1.5, rap=.9, rwp=.9, rag=.9, rwg=.9)
+plot(x = test[test$Strain==1, 2], y= test[test$Strain==2, 2])
 
-n.sims <- 1
-out <- list()
-
-for(i in 1:n.sims){
-  
-  Sim <- sim_func(n.pat = 100, rag = 0.9, rap = 0, rwg = 0.9, rwp = 0, 
-                  bpat1p = 0, bpat2p = 0)
-  
-  # Run null model analysis:
-  out[[i]] <- null_func(Sim, 1000)
-  
-}
-
-
+# See if covariate effect on 2 affects estimate on 1 (Shouldn't!)
+summary(glm(Y~X.pat.vals, family="binomial", data = test[test$Strain == 1, ]))
+summary(glm(Y~X.pat.vals, family="binomial", data = test[test$Strain == 2, ]))
+exp(.44) # slope
