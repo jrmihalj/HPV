@@ -148,15 +148,8 @@ sim_func <- function(n.pat = 100,
   
   # Draw the random effects:
   # Phi1, Phi2, Gamma1, Gamma2 = columns
-  random.across <- rmnorm(n.patients, mean = rep(0, n.strains*2), varcov=Sig.across)
-  random.within <- rmnorm(sum(n.visits), mean = rep(0, n.strains*2), varcov=Sig.within)
-  
-  # Store the random effects, for ease below:
-  b.0.phi <- random.across[,1:2]
-  b.0.gam <- random.across[,3:4]
-  
-  b.1t.phi <- random.within[,1:2]
-  b.1t.gam <- random.within[,3:4]
+  b.0.k <- rmnorm(n.patients, mean = rep(0, n.strains*2), varcov=Sig.across) # patient-level
+  b.0.t <- rmnorm(sum(n.visits), mean = rep(0, n.strains*2), varcov=Sig.within) # visit-level
   
   # Calculate phis and gammas:
   lphi <- NULL
@@ -166,10 +159,10 @@ sim_func <- function(n.pat = 100,
   # (phi/gamma) <- global_mean + intercept_among + covariate_among + 
   #                     intercept_within + covariate_within
   for(j in 1:n.obs){
-    lphi[j] <- mean.phi + b.0.phi[Patient[j],Strain[j]] + beta.pat.phi[Strain[j]] * X.pat.vals[j] + 
-      b.1t.phi[Visit[j],Strain[j]] + beta.time.phi[Strain[j]] * X.time.vals[j]
-    lgam[j] <- mean.gam + b.0.gam[Patient[j],Strain[j]] + beta.pat.gam[Strain[j]] * X.pat.vals[j] + 
-      b.1t.gam[Visit[j],Strain[j]] + beta.time.gam[Strain[j]] * X.time.vals[j]
+    lphi[j] <- mean.phi + b.0.k[Patient[j],Strain[j]] + beta.pat.phi[Strain[j]] * X.pat.vals[j] + 
+      b.0.t[Visit[j],Strain[j]] + beta.time.phi[Strain[j]] * X.time.vals[j]
+    lgam[j] <- mean.gam + b.0.k[Patient[j],(n.strains + Strain[j])] + beta.pat.gam[Strain[j]] * X.pat.vals[j] + 
+      b.0.t[Visit[j],(n.strains + Strain[j])] + beta.time.gam[Strain[j]] * X.time.vals[j]
   }
   
   
