@@ -93,41 +93,47 @@ This is a simulated 'null' case in which we impose no correlations, and no covar
 \begin{Sinput}
 > source("sim_func.R")
 > null <- sim_func(n.pat = 100,
-+                      n.vis = 10, 
-+                      # Within and among host covariate effects for phi and gamma:
-+                      bpat1g = 0, 
-+                      bpat2g = 0,
-+                      btime1g = 0,
-+                      btime2g = 0,
-+                      bpat1p = 0,
-+                      bpat2p = 0,
-+                      btime1p = 0,
-+                      btime2p = 0,
-+                      # Correlations:
-+                      ## Among-patients:
-+                      raG1G2 = 0, #rho among-patient gamma_strain1, gamma_strain2
-+                      raP1P2 = 0, 
-+                      raP1G1 = 0,
-+                      raP2G2 = 0,
-+                      raP1G2 = 0,
-+                      raP2G1 = 0,
-+                      ## Within-patients:
-+                      rwG1G2 = 0,
-+                      rwP1P2 = 0, 
-+                      rwP1G1 = 0,
-+                      rwP2G2 = 0,
-+                      rwP1G2 = 0,
-+                      rwP2G1 = 0,
-+                      # sd across patients for each strain (phi and gamma):
-+                      # Assume all sd equal
-+                      sa = 1,
-+                      # sd within patients for each strain (phi and gamma):
-+                      # Assume all sd equal
-+                      sw = .4,
-+                      #Global probabilities:
-+                      globphi = .5, 
-+                      globgam = .5, 
-+                      globpsi = .5)
++                  n.vis = 10, 
++                  # Within and among host covariate effects for phi and gamma:
++                  bpat1g = 0, 
++                  bpat2g = 0,
++                  btime1g = 0,
++                  btime2g = 0,
++                  bpat1p = 0,
++                  bpat2p = 0,
++                  btime1p = 0,
++                  btime2p = 0,
++                  # Correlations:
++                  manual = 1,
++                  # If 'manual' == T, then specify correlations
++                  ## Among-patients:
++                  raG1G2 = 0,
++                  raP1P2 = 0, 
++                  raP1G1 = 0,
++                  raP2G2 = 0,
++                  raP1G2 = 0,
++                  raP2G1 = 0,
++                  ## Within-patients:
++                  rwG1G2 = 0,
++                  rwP1P2 = 0, 
++                  rwP1G1 = 0,
++                  rwP2G2 = 0,
++                  rwP1G2 = 0,
++                  rwP2G1 = 0,
++                  ## sd across patients for each strain (phi and gamma):
++                  ## Assume all sd equal
++                  sa = 1,
++                  ## sd within patients for each strain (phi and gamma):
++                  ## Assume all sd equal
++                  sw = .4,
++                  # If 'manual' == FALSE, generate pos. definite covariance matrix automatically
++                  ## eta controls the degree of correlation:
++                  etaA = 2, # Among-patient eta
++                  etaW = 2, # Within-patient eta
++                  #Global probabilities:
++                  globphi = .5, 
++                  globgam = .5, 
++                  globpsi = .5 )
 \end{Sinput}
 \end{Schunk}
 This allows you to see all of the function's options, and you can see that the correlations are all set to zero.
