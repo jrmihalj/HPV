@@ -71,14 +71,14 @@ Thus our model estimates both the among-patient and within-patient strain correl
 
 Here we will show that our model works in the sense that we can recover imposed parameters from simulated data. 
 
-Our $sim_func()$ function simulates the occurrence of two HPV strains across a pre-determined number of patients and visits. The function allows us to manipulate many parameters including the strengths of within- and among-patient correlations in persistence and colonization. It also includes one patient-level and one visit-level covariate, the effects of which can be manipulated for each strain.
+The \texttt{sim\_func()} function simulates the occurrence of two HPV strains across a pre-determined number of patients and visits. The function allows us to manipulate many parameters including the strengths of within- and among-patient correlations in persistence and colonization. It also includes one patient-level and one visit-level covariate, the effects of which can be manipulated for each strain.
 
 This is a simulated 'null' case in which we impose no correlations, and no covariate effects. 
 <<>>=
 source("sim_func.R")
 
-null <- sim_func(n.pat = 100, #number of patients
-                 n.vis = 10,  #number of visits per patient (equal for each patient at this point)
+null <- sim_func(n.pat = 100,
+                 n.vis = 10, 
                  # Within and among host covariate effects for phi and gamma:
                  bpat1g = 0, 
                  bpat2g = 0,
@@ -88,24 +88,37 @@ null <- sim_func(n.pat = 100, #number of patients
                  bpat2p = 0,
                  btime1p = 0,
                  btime2p = 0,
-                 rag = 0, #rho.across.gamma
-                 rap = 0, #rho.across.phi
-                 rwg = 0, #rho.within.gamma
-                 rwp = 0, #rho.within.phi
-                 # sd across patients for each strain (phi and gamma):
-                 sap1 = 1, 
-                 sap2 = 1,
-                 sag1 = 1,
-                 sag2 = 1,
-                 # sd within patients for each strain (phi and gamma):
-                 swp1 = .4, 
-                 swp2 = .4,
-                 swg1 = .4,
-                 swg2 = .4,
+                 # Correlations:
+                 manual = 1,
+                 # If 'manual' == T, then specify correlations
+                 ## Among-patients:
+                 raG1G2 = 0,
+                 raP1P2 = 0, 
+                 raP1G1 = 0,
+                 raP2G2 = 0,
+                 raP1G2 = 0,
+                 raP2G1 = 0,
+                 ## Within-patients:
+                 rwG1G2 = 0,
+                 rwP1P2 = 0, 
+                 rwP1G1 = 0,
+                 rwP2G2 = 0,
+                 rwP1G2 = 0,
+                 rwP2G1 = 0,
+                 ## sd across patients for each strain (phi and gamma):
+                 ## Assume all sd equal
+                 sa = 1,
+                 ## sd within patients for each strain (phi and gamma):
+                 ## Assume all sd equal
+                 sw = .4,
+                 # If 'manual' == FALSE, generate pos. definite covariance matrix automatically
+                 ## eta controls the degree of correlation:
+                 etaA = 2, # Among-patient eta
+                 etaW = 2, # Within-patient eta
                  #Global probabilities:
                  globphi = .5, 
                  globgam = .5, 
-                 globpsi = .5)
+                 globpsi = .5 )
 @
 This allows you to see all of the function's options, and you can see that the correlations (\emph{rag, rap, rwg, rwp}) are all set to zero.
 
@@ -221,7 +234,7 @@ a2 <- subset(among.phi, Strain == 2)
 among <- cbind(a2$lphi, a1$lphi, a1[,6])
 colnames(among) <- c("phi2", "phi1", "Pat")
 among <- data.frame(among)
-among <- subset(among, Pat < 15)
+among <- subset(among, Pat < 16)
 
 p1 <- ggplot(among, aes(x=phi1, y=phi2, color=factor(Pat)))+
   geom_point()+
@@ -237,7 +250,7 @@ b2 <- subset(both.phi, Strain == 2)
 both <- cbind(b2$lphi, b1$lphi, b1[,6])
 colnames(both) <- c("phi2", "phi1", "Pat")
 both <- data.frame(both)
-both <- subset(both, Pat <= 15)
+both <- subset(both, Pat < 16)
 
 p2 <- ggplot(both, aes(x=phi1, y=phi2, color=factor(Pat)))+
   geom_point()+

@@ -12,12 +12,14 @@ Occ <- sim_func(n.pat = 100,
                 btime1p = 0,
                 btime2p = 0,
                 # Correlations:
+                manual = 0,
+                # If 'manual' == T, then specify correlations
                 ## Among-patients:
                 raG1G2 = 0,
                 raP1P2 = 0, 
                 raP1G1 = 0,
                 raP2G2 = 0,
-                raP1G2 = -0.9,
+                raP1G2 = 0,
                 raP2G1 = 0,
                 ## Within-patients:
                 rwG1G2 = 0,
@@ -26,16 +28,20 @@ Occ <- sim_func(n.pat = 100,
                 rwP2G2 = 0,
                 rwP1G2 = 0,
                 rwP2G1 = 0,
-                # sd across patients for each strain (phi and gamma):
-                # Assume all sd equal
+                ## sd across patients for each strain (phi and gamma):
+                ## Assume all sd equal
                 sa = 1,
-                # sd within patients for each strain (phi and gamma):
-                # Assume all sd equal
+                ## sd within patients for each strain (phi and gamma):
+                ## Assume all sd equal
                 sw = .4,
+                # If 'manual' == FALSE, generate pos. definite covariance matrix automatically
+                ## eta controls the degree of correlation:
+                etaA = 2, # Among-patient eta
+                etaW = 1.5, # Within-patient eta
                 #Global probabilities:
                 globphi = .5, 
                 globgam = .5, 
-                globpsi = .5 
+                globpsi = .5
 )
 
 library(ggplot2)

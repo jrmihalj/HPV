@@ -1,9 +1,9 @@
 # Function for simulations:
 
-require(mnormt) #needed for multivariate normal distrib
+require(mnormt) 
 require(tidyr)
 require(dplyr)
-
+require(clusterGeneration)
 
 # Required  custom functions:
 Logit <- function(x){
@@ -26,6 +26,8 @@ sim_func <- function(n.pat = 100,
                      btime1p = 0,
                      btime2p = 0,
                      # Correlations:
+                     manual = 1,
+                     # If 'manual' == T, then specify correlations
                      ## Among-patients:
                      raG1G2 = 0,
                      raP1P2 = 0, 
@@ -40,16 +42,20 @@ sim_func <- function(n.pat = 100,
                      rwP2G2 = 0,
                      rwP1G2 = 0,
                      rwP2G1 = 0,
-                     # sd across patients for each strain (phi and gamma):
-                     # Assume all sd equal
+                     ## sd across patients for each strain (phi and gamma):
+                     ## Assume all sd equal
                      sa = 1,
-                     # sd within patients for each strain (phi and gamma):
-                     # Assume all sd equal
+                     ## sd within patients for each strain (phi and gamma):
+                     ## Assume all sd equal
                      sw = .4,
+                     # If 'manual' == FALSE, generate pos. definite covariance matrix automatically
+                     ## eta controls the degree of correlation:
+                     etaA = 2, # Among-patient eta
+                     etaW = 2, # Within-patient eta
                      #Global probabilities:
                      globphi = .5, 
                      globgam = .5, 
-                     globpsi = .5 
+                     globpsi = .5
   ){
   
   n.strains <- 2 #number of HPV strains
@@ -98,31 +104,47 @@ sim_func <- function(n.pat = 100,
   mean.psi <- Logit(globpsi)
   
   #Correlations:
+  if(manual == 1){
+    
+    ## Among-patients:
+    
+    #Covariance matrix:
+    #Phi1, Phi2, Gamma1, Gamma2 = columns
+    Sig.across <- matrix(
+      c(sa^2, raP1P2*sa^2, raP1G1*sa^2, raP1G2*sa^2,
+        raP1P2*sa^2, sa^2, raP2G1*sa^2, raP2G2*sa^2,
+        raP1G1*sa^2, raP2G1*sa^2, sa^2, raG1G2*sa^2,
+        raP1G2*sa^2, raP2G2*sa^2, raG1G2*sa^2, sa^2),
+      ncol=4
+    )
+    
+    ## Within-patients:
+    
+    #Covariance matrix:
+    #Phi1, Phi2, Gamma1, Gamma2 = columns
+    
+    Sig.within <- matrix(
+      c(sw^2, rwP1P2*sw^2, rwP1G1*sw^2, rwP1G2*sw^2,
+        rwP1P2*sw^2, sw^2, rwP2G1*sw^2, rwP2G2*sw^2,
+        rwP1G1*sw^2, rwP2G1*sw^2, sw^2, rwG1G2*sw^2,
+        rwP1G2*sw^2, rwP2G2*sw^2, rwG1G2*sw^2, sw^2),
+      ncol=4
+    )
+    
+  }else{
+    
+    Sig.across <- genPositiveDefMat(dim=n.strains*2, #Number of columns/rows
+                                    covMethod = 'onion', 
+                                    rangeVar = c(.5, 1), # Range of variances
+                                    eta=etaA)$Sigma
+    
+    Sig.within <- genPositiveDefMat(dim=n.strains*2, #Number of columns/rows
+                                    covMethod = 'onion', 
+                                    rangeVar = c(.05, .3), 
+                                    eta=etaW)$Sigma
+    
+  }
   
-  ## Among-patients:
-  
-  #Covariance matrix:
-  #Phi1, Phi2, Gamma1, Gamma2 = columns
-  Sig.across <- matrix(
-    c(sa^2, raP1P2*sa^2, raP1G1*sa^2, raP1G2*sa^2,
-      raP1P2*sa^2, sa^2, raP2G1*sa^2, raP2G2*sa^2,
-      raP1G1*sa^2, raP2G1*sa^2, sa^2, raG1G2*sa^2,
-      raP1G2*sa^2, raP2G2*sa^2, raG1G2*sa^2, sa^2),
-    ncol=4
-  )
-  
-  ## Within-patients:
-  
-  #Covariance matrix:
-  #Phi1, Phi2, Gamma1, Gamma2 = columns
-  
-  Sig.within <- matrix(
-    c(sw^2, rwP1P2*sw^2, rwP1G1*sw^2, rwP1G2*sw^2,
-      rwP1P2*sw^2, sw^2, rwP2G1*sw^2, rwP2G2*sw^2,
-      rwP1G1*sw^2, rwP2G1*sw^2, sw^2, rwG1G2*sw^2,
-      rwP1G2*sw^2, rwP2G2*sw^2, rwG1G2*sw^2, sw^2),
-    ncol=4
-  )
   
   # Draw the random effects:
   # Phi1, Phi2, Gamma1, Gamma2 = columns
