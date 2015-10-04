@@ -135,7 +135,7 @@ sim_func <- function(n.pat = 100,
     
     Sig.across <- genPositiveDefMat(dim=n.strains*2, #Number of columns/rows
                                     covMethod = 'onion', 
-                                    rangeVar = c(.5, 1), # Range of variances
+                                    rangeVar = c(2, 4), # Range of variances
                                     eta=etaA)$Sigma
     
     Sig.within <- genPositiveDefMat(dim=n.strains*2, #Number of columns/rows
@@ -145,6 +145,9 @@ sim_func <- function(n.pat = 100,
     
   }
   
+  # generate correlation matrices
+  Rho_across <- cov2cor(Sig.across)
+  Rho_within <- cov2cor(Sig.within)
   
   # Draw the random effects:
   # Phi1, Phi2, Gamma1, Gamma2 = columns
@@ -159,10 +162,16 @@ sim_func <- function(n.pat = 100,
   # (phi/gamma) <- global_mean + intercept_among + covariate_among + 
   #                     intercept_within + covariate_within
   for(j in 1:n.obs){
-    lphi[j] <- mean.phi + b.0.k[Patient[j],Strain[j]] + beta.pat.phi[Strain[j]] * X.pat.vals[j] + 
-      b.0.t[Visit[j],Strain[j]] + beta.time.phi[Strain[j]] * X.time.vals[j]
-    lgam[j] <- mean.gam + b.0.k[Patient[j],(n.strains + Strain[j])] + beta.pat.gam[Strain[j]] * X.pat.vals[j] + 
-      b.0.t[Visit[j],(n.strains + Strain[j])] + beta.time.gam[Strain[j]] * X.time.vals[j]
+    lphi[j] <- mean.phi + 
+      b.0.k[Patient[j], Strain[j]] #+ 
+      #beta.pat.phi[Strain[j]] * X.pat.vals[j] + 
+      #b.0.t[Visit[j],Strain[j]] + 
+      #beta.time.phi[Strain[j]] * X.time.vals[j]
+    lgam[j] <- mean.gam + 
+      b.0.k[Patient[j], (n.strains + Strain[j])] #+ 
+      #beta.pat.gam[Strain[j]] * X.pat.vals[j] + 
+      #b.0.t[Visit[j],(n.strains + Strain[j])] + 
+      #beta.time.gam[Strain[j]] * X.time.vals[j]
   }
   
   
@@ -177,13 +186,12 @@ sim_func <- function(n.pat = 100,
   
   psi <- NULL
   for(j in 1:n.obs){
-    
     if(Visit.Pat[j]==1){ # If it's the patient's first visit
-      psi[j] <- AntiLogit(rnorm(1,mean.psi,.2))
-    }else{
-      psi[j] <- phi[j-n.strains] * psi[j-n.strains] + gam[j-n.strains] * (1 - psi[j-n.strains]) 
+      psi[j] <- AntiLogit(rnorm(1, mean.psi, 0))
+    } else {
+      psi[j] <- phi[j-n.strains] * psi[j-n.strains] + 
+        gam[j-n.strains] * (1 - psi[j-n.strains])
     }
-    
   }
   
   Y <- NULL
@@ -191,10 +199,9 @@ sim_func <- function(n.pat = 100,
     Y[z] <- rbinom(1, 1, psi[z])
   }
   
-  
-  
   # Create a data.frame
   Occ <- data.frame(Y, psi, phi, gam, Strain, Patient, Visit.Pat, X.time.vals, X.pat.vals)
-  
-  return(Occ)
+  pars <- list(Sig.across=Sig.across, Sig.within=Sig.within, 
+               Rho_across=Rho_across, Rho_within=Rho_within)
+  return(list(Occ=Occ, pars=pars))
 }
