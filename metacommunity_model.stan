@@ -1,129 +1,110 @@
-data
-{
+data {
 	int<lower=0> n_strains;
 	int<lower=0> n_obs;
 	int<lower=0> n_patients;
 	int<lower=0> n_visits_total; //total number of clinic visits across patients
-	
-	
-	
-	int<lower=0> Y[n_obs]; //occupancy observations
-	int<lower=0> strain[n_obs]; // strain for this observation
-	int<lower=0> patient[n_obs]; // patient for this observation/strain 
-	int<lower=0> visit_pat[n_obs]; // visit for this patient for this observation/strain
-	int<lower=0> Visit[n_obs]; // observation (clinic visits across patients)
-	
-	real X_time[n_obs]; // time varying covariates
-	real X_pat[n_obs]; // time invariant covariates
-
+	int<lower=0, upper=1> Y[n_obs]; //occupancy observations
+	int<lower=1, upper=n_strains> strain[n_obs]; // strain for this observation
+	int<lower=1, upper=n_patients> patient[n_obs]; // patient for this observation/strain 
+	int<lower=1> visit_pat[n_obs]; // visit for this patient for this observation/strain
+	int<lower=1> Visit[n_obs]; // observation (clinic visits across patients)
+	vector[n_obs] X_time; // time varying covariates
+	vector[n_obs] X_pat; // time invariant covariates
 }
 	
-parameters
-{
-// intercepts
-real phi_mean ; // global mean of colonization probability
-real gam_mean; // global mean of vacancy probability 
-real psi_mean; // initial occupancy probability
+parameters {
+  // intercepts
+  real phi_mean ; // global mean of colonization probability
+  real gam_mean; // global mean of vacancy probability 
+  real psi_mean; // initial occupancy probability
+  
+  // params of fixed effects 
+  //real beta_pat_mean; 
+  //real beta_time_mean;
+  //real<lower=0> beta_pat_sd;
+  //real<lower=0> beta_time_sd;
+  //vector[n_strains] beta_patR; // fixed across-patients covariate effect
+  //vector[n_strains] beta_timeR; // fixed within patient covariate effect 
 
-// params of fixed effects 
-real beta_pat_mean; 
-real beta_time_mean;
-real<lower=0> beta_pat_sd;
-real<lower=0> beta_time_sd;
+  // random effects
+	cholesky_factor_corr[n_strains * 2] L_patient; // * 2 b/c inc. phi & gamma
+	matrix[n_strains * 2, n_patients] z_patient;
+	vector<lower=0> [n_strains * 2] tau_patient; // across patient std deviations
+	
+	//cholesky_factor_corr[n_strains * 2] L_time;
+	//matrix[n_strains * 2, n_visits_total] z_time;
+	//vector<lower=0> [n_strains * 2] tau_time; // within patient std deviations
+}
 
-real beta_pat[n_strains]; // fixed across-patients covariate effect
-real beta_time[ n_strains]; // fixed within patient covariate effect 
-
-
-// random effects
-	cholesky_factor_corr[n_strains] L_patient_phi;
-	matrix[n_strains, n_patients] z_patient_phi;
-	vector<lower=0> [n_strains] tau_patient_phi; // across patient std deviations
-	
-	cholesky_factor_corr[n_strains] L_patient_gam;
-	matrix[n_strains, n_patients] z_patient_gam;
-	vector<lower=0> [n_strains] tau_patient_gam; // across patient std deviations
-	
-	cholesky_factor_corr[n_strains] L_time_phi;
-	matrix[n_strains, n_visits_total] z_time_phi;
-	vector<lower=0> [n_strains] tau_time_phi; // within patient std deviations
-	
-	cholesky_factor_corr[n_strains] L_time_gam;
-	matrix[n_strains, n_visits_total] z_time_gam;
-	vector<lower=0> [n_strains] tau_time_gam; // within patient std deviations
-	
-	}
-	
 transformed parameters{
 	vector[n_obs] phi; //time,patient,strain specific colonization probability
 	vector[n_obs] gam; //time,patient,strain specific persistence probability
-	matrix[n_patients, n_strains] alpha_patient_phi;
-	matrix[n_patients, n_strains] alpha_patient_gam;
-	matrix[n_visits_total, n_strains] alpha_time_phi;
-	matrix[n_visits_total, n_strains] alpha_time_gam; 
+	matrix[n_patients, n_strains * 2] alpha_patient;
+	vector<lower=0, upper=1>[n_obs] psi;
+	//matrix[n_visits_total, n_strains * 2] alpha_time;
+	
+	//vector[n_strains] beta_pat; // fixed across-patients covariate effect
+  //vector[n_strains] beta_time; // fixed within patient covariate effect 
+  
+  //beta_pat <- beta_pat_mean + beta_pat_sd * beta_patR;
+  //beta_time <- beta_time_mean + beta_time_sd * beta_timeR;
 	
 	//random effects
-	alpha_patient_phi <- (diag_pre_multiply(tau_patient_phi, L_patient_phi) * z_patient_phi)';
-	alpha_time_phi <- (diag_pre_multiply(tau_time_phi, L_time_phi) * z_time_phi)';
-	
-	alpha_patient_gam <- (diag_pre_multiply(tau_patient_gam, L_patient_gam) * z_patient_gam)';
-	alpha_time_gam <- (diag_pre_multiply(tau_time_gam, L_time_gam) * z_time_gam)';
+	alpha_patient <- (diag_pre_multiply(tau_patient, L_patient) * z_patient)';
+	//alpha_time <- (diag_pre_multiply(tau_time, L_time) * z_time)';
 	
 	for(i in 1:n_obs){
-		phi[i] <- inv_logit(phi_mean + beta_pat[strain[i]]*X_pat[i] + alpha_patient_phi[patient[i],strain[i]] + beta_time[strain[i]]*X_time[i] + alpha_time_phi[Visit[i],strain[i]]);
-		gam[i] <- inv_logit(gam_mean + beta_pat[strain[i]]*X_pat[i] + alpha_patient_gam[patient[i],strain[i]] + beta_time[strain[i]]*X_time[i] + alpha_time_gam[Visit[i],strain[i]]);
+		phi[i] <- inv_logit(phi_mean 
+		                      + alpha_patient[patient[i], strain[i]]); 
+		                    //+ beta_pat[strain[i]]*X_pat[i]
+		                    //+ beta_time[strain[i]]*X_time[i] 
+		                    //+ alpha_time_phi[Visit[i],strain[i]]);
+		gam[i] <- inv_logit(gam_mean 
+		                      + alpha_patient[patient[i], n_strains + strain[i]]);
+		                    //+ beta_pat[strain[i]]*X_pat[i] 
+		                    //+ beta_time[strain[i]]*X_time[i] 
+		                    //+ alpha_time_gam[Visit[i],strain[i]]);
+	  if(visit_pat[i] == 1){
+  	  psi[i] <- inv_logit(psi_mean);
+  	} else {
+  	  psi[i] <- phi[i-n_strains] * psi[i-n_strains] 
+  	              + gam[i-n_strains] * (1 - psi[i-n_strains]);  
+  	  }
 	}
 }
 
-model
-{
-  real psi[n_obs];
+model {
+  phi_mean ~ normal(0, .5);
+  gam_mean ~ normal(0, .5);
+  psi_mean ~ normal(0, .5);
   
   // prior on fixed effects
-  beta_pat_mean ~ normal(0,10);
-  beta_time_mean ~ normal(0,10);
-  beta_pat_sd ~ cauchy(0,5);
-  beta_time_sd ~ cauchy(0,5);
-  
-  beta_pat ~ normal(beta_pat_mean, beta_pat_sd);
-  beta_time ~ normal(beta_time_mean, beta_time_sd);  
+  //beta_pat_mean ~ normal(0, 1.5);
+  //beta_time_mean ~ normal(0, 1.5);
+  //beta_pat_sd ~ normal(0, 2);
+  //beta_time_sd ~ normal(0, 2);
+
+  // coefficients (matt trick)
+  //beta_patR ~ normal(0, 1); // normal(beta_pat_mean, beta_pat_sd)
+  //beta_timeR ~ normal(0, 1);  // normal(beta_time_mean, beta_time_sd)
 
   // prior on across patient random effects
-  L_patient_phi ~ lkj_corr_cholesky(2);
-  tau_patient_phi ~ cauchy(0, 3);
-  to_vector(z_patient_phi) ~ normal(0,1);
-  
-  L_patient_gam ~ lkj_corr_cholesky(2);
-  tau_patient_gam ~ cauchy(0, 3);
-  to_vector(z_patient_gam) ~ normal(0,1);
+  L_patient ~ lkj_corr_cholesky(2);
+  tau_patient ~ normal(0, 2);
+  to_vector(z_patient) ~ normal(0, 1);
   
   // prior on within patient random effects
-  L_time_phi ~ lkj_corr_cholesky(2);
-  tau_time_phi ~ cauchy(0, 3);
-  to_vector(z_time_phi) ~ normal(0,1);
-  
-  L_time_gam ~ lkj_corr_cholesky(2);
-  tau_time_gam ~ cauchy(0, 3);
-  to_vector(z_time_gam) ~ normal(0,1);
-  
-  // occupancy likelihood
-  
-  for( i in 1:n_obs){
-  	// initial likelihood:
-  	if(visit_pat[i] == 1){
-  		psi[i] <- inv_logit(psi_mean);
-  	}
-  	
-  	// subsequent likelihood:
-  	if(visit_pat[i] >1){
-		psi[i] <- gam[i-1]*psi[i-1] + phi[i-1]*(1 - psi[i-1]);
-  	}
-  
-	Y[i] ~ bernoulli(psi[i]);
-  }
-  
-  
-  
-	
+  //L_time ~ lkj_corr_cholesky(2);
+  //tau_time ~ normal(0, 2);
+  //to_vector(z_time) ~ normal(0,1);
+
+  Y ~ bernoulli(psi);
 } // end model block
 
+generated quantities {
+  matrix[n_strains * 2, n_strains * 2] cor_patient;
+  //matrix[n_strains * 2, n_strains * 2] cor_time;
+  
+  cor_patient <- multiply_lower_tri_self_transpose(L_patient);
+  //cor_time <- multiply_lower_tri_self_transpose(L_time);
+}
