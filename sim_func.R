@@ -135,12 +135,12 @@ sim_func <- function(n.pat = 100,
     
     Sig.across <- genPositiveDefMat(dim=n.strains*2, #Number of columns/rows
                                     covMethod = 'onion', 
-                                    rangeVar = c(2, 4), # Range of variances
+                                    rangeVar = c(.5, 3), # Range of variances
                                     eta=etaA)$Sigma
     
     Sig.within <- genPositiveDefMat(dim=n.strains*2, #Number of columns/rows
                                     covMethod = 'onion', 
-                                    rangeVar = c(1, 3), 
+                                    rangeVar = c(.1, 2), 
                                     eta=etaW)$Sigma
     
   }
