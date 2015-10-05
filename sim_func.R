@@ -140,7 +140,7 @@ sim_func <- function(n.pat = 100,
     
     Sig.within <- genPositiveDefMat(dim=n.strains*2, #Number of columns/rows
                                     covMethod = 'onion', 
-                                    rangeVar = c(.05, .3), 
+                                    rangeVar = c(2, 4), 
                                     eta=etaW)$Sigma
     
   }
@@ -163,14 +163,14 @@ sim_func <- function(n.pat = 100,
   #                     intercept_within + covariate_within
   for(j in 1:n.obs){
     lphi[j] <- mean.phi + 
-      b.0.k[Patient[j], Strain[j]] #+ 
+      b.0.k[Patient[j], Strain[j]] + 
       #beta.pat.phi[Strain[j]] * X.pat.vals[j] + 
-      #b.0.t[Visit[j],Strain[j]] + 
+      b.0.t[Visit[j], Strain[j]] #+ 
       #beta.time.phi[Strain[j]] * X.time.vals[j]
     lgam[j] <- mean.gam + 
-      b.0.k[Patient[j], (n.strains + Strain[j])] #+ 
+      b.0.k[Patient[j], (n.strains + Strain[j])] + 
       #beta.pat.gam[Strain[j]] * X.pat.vals[j] + 
-      #b.0.t[Visit[j],(n.strains + Strain[j])] + 
+      b.0.t[Visit[j],(n.strains + Strain[j])] #+ 
       #beta.time.gam[Strain[j]] * X.time.vals[j]
   }
   

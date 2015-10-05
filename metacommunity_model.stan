@@ -31,17 +31,18 @@ parameters {
 	matrix[n_strains * 2, n_patients] z_patient;
 	vector<lower=0> [n_strains * 2] tau_patient; // across patient std deviations
 	
-	//cholesky_factor_corr[n_strains * 2] L_time;
-	//matrix[n_strains * 2, n_visits_total] z_time;
-	//vector<lower=0> [n_strains * 2] tau_time; // within patient std deviations
+	cholesky_factor_corr[n_strains * 2] L_time;
+	matrix[n_strains * 2, n_visits_total] z_time;
+	vector<lower=0> [n_strains * 2] tau_time; // within patient std deviations
 }
 
 transformed parameters{
 	vector[n_obs] phi; //time,patient,strain specific colonization probability
 	vector[n_obs] gam; //time,patient,strain specific persistence probability
 	matrix[n_patients, n_strains * 2] alpha_patient;
+	matrix[n_visits_total, n_strains * 2] alpha_time;
 	vector<lower=0, upper=1>[n_obs] psi;
-	//matrix[n_visits_total, n_strains * 2] alpha_time;
+	
 	
 	//vector[n_strains] beta_pat; // fixed across-patients covariate effect
   //vector[n_strains] beta_time; // fixed within patient covariate effect 
@@ -51,19 +52,19 @@ transformed parameters{
 	
 	//random effects
 	alpha_patient <- (diag_pre_multiply(tau_patient, L_patient) * z_patient)';
-	//alpha_time <- (diag_pre_multiply(tau_time, L_time) * z_time)';
+	alpha_time <- (diag_pre_multiply(tau_time, L_time) * z_time)';
 	
 	for(i in 1:n_obs){
 		phi[i] <- inv_logit(phi_mean 
-		                      + alpha_patient[patient[i], strain[i]]); 
+		                      + alpha_patient[patient[i], strain[i]] 
 		                    //+ beta_pat[strain[i]]*X_pat[i]
-		                    //+ beta_time[strain[i]]*X_time[i] 
-		                    //+ alpha_time_phi[Visit[i],strain[i]]);
+		                    //+ beta_time[strain[i]]*X_time[i]); 
+		                    + alpha_time[Visit[i],strain[i]]);
 		gam[i] <- inv_logit(gam_mean 
-		                      + alpha_patient[patient[i], n_strains + strain[i]]);
+		                      + alpha_patient[patient[i], n_strains + strain[i]]
 		                    //+ beta_pat[strain[i]]*X_pat[i] 
-		                    //+ beta_time[strain[i]]*X_time[i] 
-		                    //+ alpha_time_gam[Visit[i],strain[i]]);
+		                    //+ beta_time[strain[i]] * X_time[i]);
+		                      + alpha_time[Visit[i], n_strains + strain[i]]);
 	  if(visit_pat[i] == 1){
   	  psi[i] <- inv_logit(psi_mean);
   	} else {
@@ -94,17 +95,17 @@ model {
   to_vector(z_patient) ~ normal(0, 1);
   
   // prior on within patient random effects
-  //L_time ~ lkj_corr_cholesky(2);
-  //tau_time ~ normal(0, 2);
-  //to_vector(z_time) ~ normal(0,1);
+  L_time ~ lkj_corr_cholesky(2);
+  tau_time ~ normal(0, 2);
+  to_vector(z_time) ~ normal(0, 1);
 
   Y ~ bernoulli(psi);
 } // end model block
 
 generated quantities {
   matrix[n_strains * 2, n_strains * 2] cor_patient;
-  //matrix[n_strains * 2, n_strains * 2] cor_time;
+  matrix[n_strains * 2, n_strains * 2] cor_time;
   
   cor_patient <- multiply_lower_tri_self_transpose(L_patient);
-  //cor_time <- multiply_lower_tri_self_transpose(L_time);
+  cor_time <- multiply_lower_tri_self_transpose(L_time);
 }

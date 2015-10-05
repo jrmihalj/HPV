@@ -26,7 +26,7 @@ n.pat = 200
 bpat1p = 0
 bpat2p = 0
 
-Sim <- sim_func(n.pat = n.pat, n.vis=10, manual=FALSE)
+Sim <- sim_func(n.pat = n.pat, n.vis=20, manual=FALSE)
 
 Sim$Occ %>%
   ggplot(aes(x=phi, y=gam, color=factor(Patient))) + 
@@ -59,15 +59,16 @@ modelInput <- list(
 )
 
 nChains <- 3
-iter <- 1000
+iter <- 1200
 modelFile <- "metacommunity_model.stan"
 
 watch <- c('phi_mean', 'gam_mean', 'psi_mean', 
            #'beta_pat_mean', 'beta_time_mean', 
            #'beta_pat_sd', 'beta_time_sd', 
            #'beta_pat', 'beta_time', 
-           'tau_patient', 'alpha_patient', #'tau_time', 
-           'cor_patient', 'psi'#, #'cor_time'
+           'tau_patient', 'alpha_patient', 
+           'tau_time', 'alpha_time', 
+           'cor_patient', 'psi', 'cor_time'
            )
 if (!('m_init' %in% ls())){
   m_init <- stan(modelFile, data=modelInput, iter=10, chains=1, pars='lp__')
@@ -91,6 +92,7 @@ sqrt(diag(Sim$pars$Sig.across))
 library(ggmcmc)
 ggd <- ggs(fit)
 ggs_caterpillar(ggd, 'alpha_patient')
+ggs_caterpillar(ggd, 'alpha_time')
 
 post <- extract(fit)
 
@@ -105,7 +107,7 @@ for (i in 1:(modelInput$n_strains*2)){
       abline(v=sqrt(Sim$pars$Sig.across[i, j]), col='red', lty=2, lwd=2)
     } else if (i < j) {
         plot(density(post$cor_patient[, i, j]), main='', yaxt='n', xlab='', 
-             xlim=c(-1, 1))
+             xlim=c(-1, 1), ylab='')
         abline(v=Sim$pars$Rho_across[i, j])
       } else if (i > j) {
         i_m <- apply(post$alpha_patient[, , i], 2, median)
@@ -115,5 +117,27 @@ for (i in 1:(modelInput$n_strains*2)){
   }
 }
 
+
+
+br <- seq(0, .1 + max(post$tau_time), .1)
+alph <- .2
+par(mfrow=c(modelInput$n_strains * 2, modelInput$n_strains * 2), bty='n')
+for (i in 1:(modelInput$n_strains*2)){
+  for (j in 1:(modelInput$n_strains*2)){
+    if (i == j){
+      hist(post$tau_time[, i], breaks=br, main='', yaxt='n', col='grey', 
+           ylab='')
+      abline(v=sqrt(Sim$pars$Sig.within[i, j]), col='red', lty=2, lwd=2)
+    } else if (i < j) {
+      plot(density(post$cor_time[, i, j]), main='', yaxt='n', xlab='', 
+           xlim=c(-1, 1), ylab='')
+      abline(v=Sim$pars$Rho_within[i, j])
+    } else if (i > j) {
+      i_m <- apply(post$alpha_time[, , i], 2, median)
+      j_m <- apply(post$alpha_time[, , j], 2, median)
+      plot(i_m, j_m, col=alpha(1, alph), cex=.4)
+    }
+  }
+}
 
 summary <- summary(fit)$summary
