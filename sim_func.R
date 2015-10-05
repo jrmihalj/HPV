@@ -140,7 +140,7 @@ sim_func <- function(n.pat = 100,
     
     Sig.within <- genPositiveDefMat(dim=n.strains*2, #Number of columns/rows
                                     covMethod = 'onion', 
-                                    rangeVar = c(2, 4), 
+                                    rangeVar = c(1, 3), 
                                     eta=etaW)$Sigma
     
   }
@@ -170,7 +170,7 @@ sim_func <- function(n.pat = 100,
     lgam[j] <- mean.gam + 
       b.0.k[Patient[j], (n.strains + Strain[j])] + 
       #beta.pat.gam[Strain[j]] * X.pat.vals[j] + 
-      b.0.t[Visit[j],(n.strains + Strain[j])] #+ 
+      b.0.t[Visit[j], (n.strains + Strain[j])] #+ 
       #beta.time.gam[Strain[j]] * X.time.vals[j]
   }
   
@@ -200,7 +200,8 @@ sim_func <- function(n.pat = 100,
   }
   
   # Create a data.frame
-  Occ <- data.frame(Y, psi, phi, gam, Strain, Patient, Visit.Pat, X.time.vals, X.pat.vals)
+  Occ <- data.frame(Y, psi, phi, gam, Strain, Patient, Visit.Pat, Visit,
+                    X.time.vals, X.pat.vals)
   pars <- list(Sig.across=Sig.across, Sig.within=Sig.within, 
                Rho_across=Rho_across, Rho_within=Rho_within)
   return(list(Occ=Occ, pars=pars))

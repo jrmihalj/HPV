@@ -22,11 +22,11 @@ AntiLogit <- function(x){
 }
 
 #### Set params and run simulation
-n.pat = 200
+n.pat = 300
 bpat1p = 0
 bpat2p = 0
 
-Sim <- sim_func(n.pat = n.pat, n.vis=20, manual=FALSE)
+Sim <- sim_func(n.pat = n.pat, n.vis=40, manual=FALSE)
 
 Sim$Occ %>%
   ggplot(aes(x=phi, y=gam, color=factor(Patient))) + 
@@ -34,6 +34,7 @@ Sim$Occ %>%
   geom_point()
 
 if (n.pat < 300){
+  # this plot makes me doubt whether within-patient effects can be identified
   Sim$Occ %>%
     ggplot(aes(x=Visit.Pat, y=psi)) + 
     geom_line(aes(color=factor(Strain))) + 
@@ -84,15 +85,6 @@ fit <- stan(
 traceplot(fit, 'lp__')
 traceplot(fit)
 
-traceplot(fit, 'cor_patient')
-Sim$pars$Rho_across
-traceplot(fit, 'tau_patient')
-sqrt(diag(Sim$pars$Sig.across))
-
-library(ggmcmc)
-ggd <- ggs(fit)
-ggs_caterpillar(ggd, 'alpha_patient')
-ggs_caterpillar(ggd, 'alpha_time')
 
 post <- extract(fit)
 
@@ -141,3 +133,7 @@ for (i in 1:(modelInput$n_strains*2)){
 }
 
 summary <- summary(fit)$summary
+library(ggmcmc)
+ggd <- ggs(fit)
+ggs_caterpillar(ggd, 'alpha_patient')
+ggs_caterpillar(ggd, 'alpha_time')

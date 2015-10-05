@@ -59,7 +59,7 @@ transformed parameters{
 		                      + alpha_patient[patient[i], strain[i]] 
 		                    //+ beta_pat[strain[i]]*X_pat[i]
 		                    //+ beta_time[strain[i]]*X_time[i]); 
-		                    + alpha_time[Visit[i],strain[i]]);
+		                    + alpha_time[Visit[i], strain[i]]);
 		gam[i] <- inv_logit(gam_mean 
 		                      + alpha_patient[patient[i], n_strains + strain[i]]
 		                    //+ beta_pat[strain[i]]*X_pat[i] 
