@@ -22,11 +22,11 @@ AntiLogit <- function(x){
 }
 
 #### Set params and run simulation
-n.pat = 300
+n.pat = 50
 bpat1p = 0
 bpat2p = 0
 
-Sim <- sim_func(n.pat = n.pat, n.vis=40, manual=FALSE)
+Sim <- sim_func(n.pat = n.pat, n.vis=5, manual=FALSE)
 
 Sim$Occ %>%
   ggplot(aes(x=phi, y=gam, color=factor(Patient))) + 
@@ -42,19 +42,16 @@ if (n.pat < 300){
 }
 
 ### Generate variables for stan model input:
-Visit = rep(1:(nrow(Sim$Occ)/ length(unique(Sim$Occ$Strain))), 
-            each=length(unique(Sim$Occ$Strain)))
-
 modelInput <- list(
   n_strains = length(unique(Sim$Occ$Strain)),
   n_obs = nrow(Sim$Occ),
   n_patients = length(unique(Sim$Occ$Patient)),
-  n_visits_total = length(unique(Visit)),
+  n_visits_total = max(Sim$Occ$Visit),
   Y = Sim$Occ$Y,
   strain = Sim$Occ$Strain,
   patient = Sim$Occ$Patient,
   visit_pat = Sim$Occ$Visit.Pat,
-  Visit = Visit,
+  Visit = Sim$Occ$Visit,
   X_time = Sim$Occ$X.time.vals,
   X_pat = Sim$Occ$X.pat.vals
 )
