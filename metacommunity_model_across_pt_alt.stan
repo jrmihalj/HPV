@@ -63,8 +63,6 @@ transformed parameters
 	
 	// occupancy probability 
 	vector<lower=0, upper=1>[n_obs] psi;
-	vector<lower=0, upper=1>[n_obs] psi_col;
-	vector<lower=0, upper=1>[n_obs] psi_per;
 	
 	
 	//between-strain effects
@@ -115,20 +113,11 @@ transformed parameters
 		                   
 	  if(visit_pat[i] == 1){
 	  	psi[i] <- inv_logit(psi_mean); // overall p(occupancy)
-  	  	psi_col[i] <- inv_logit(psi_mean); // p(colonization)
-  	  	psi_per[i] <- inv_logit(psi_mean); // p(persistence)
   	  } // end if
   	  
   	  else {
-  	 	 psi_per[i] <- phi[i-n_strains] * psi[i-n_strains] ;
-  	 	 psi_col[i] <- gam[i-n_strains] * (1 - psi[i-n_strains]); 
+  	 	 psi[i] <- phi[i-n_strains] * Y[i - n_strains] + gam[i-n_strains] * (1 - Y[i - n_strains]); 
   	 	 
-  	  	if( Y[i - n_strains] == 1){
-  			psi[i] <- psi_per[i];
-  		}// end if 
-  	 	if(Y[i - n_strains] == 0) {
-  			psi[i] <- psi_col[i];
-  		}// end if 
   	  }// end else
 	}// end n_obs
 }
@@ -150,21 +139,21 @@ model {
   //beta_timeR ~ normal(0, 1);  // normal(beta_time_mean, beta_time_sd)
 
   // prior on across patient random effects
-  L_patient_phi1_phi2 ~ lkj_corr_cholesky(2);
+  L_patient_phi1_phi2 ~ lkj_corr_cholesky(4);
   tau_patient_phi1_phi2 ~ normal(0, 2);
   to_vector(z_patient_phi1_phi2) ~ normal(0, 1);
   
-  L_patient_gamma1_gamma2 ~ lkj_corr_cholesky(2);
+  L_patient_gamma1_gamma2 ~ lkj_corr_cholesky(4);
   tau_patient_gamma1_gamma2 ~ normal(0, 2);
   to_vector(z_patient_gamma1_gamma2) ~ normal(0, 1);
   
-  L_patient_phi1_gamma2 ~ lkj_corr_cholesky(2);
+  L_patient_phi1_gamma2 ~ lkj_corr_cholesky(4);
   //constrain taus
  // tau_patient_phi1_gamma2[1] <- tau_patient_phi1_phi2[1];
  // tau_patient_phi1_gamma2[2] <- tau_patient_gamma1_gamma2[2];
   to_vector(z_patient_phi1_gamma2) ~ normal(0, 1);
   
-  L_patient_gamma1_phi2 ~ lkj_corr_cholesky(2);
+  L_patient_gamma1_phi2 ~ lkj_corr_cholesky(4);
   //tau_patient_gamma1_phi2[1] <- tau_patient_gamma1_gamma2[1];
  // tau_patient_gamma1_phi2[2] <- tau_patient_phi1_phi2[2];
   to_vector(z_patient_gamma1_phi2) ~ normal(0, 1);

@@ -22,24 +22,41 @@ AntiLogit <- function(x){
 }
 
 #### Set params and run simulation
-n.pat = 50
+n.pat = 500
 bpat1p = 0
 bpat2p = 0
 
-Sim <- sim_func(n.pat = n.pat, n.vis=5, manual=FALSE)
+Sim <- sim_func(n.pat = n.pat,
+                n.vis = 10,
+                manual=F,
+                etaA = .1)
+#                 raG1G2 = .8,
+#                 raP1P2 = .8, 
+#                 raP1G1 = 0,
+#                 raP2G2 = 0,
+#                 raP1G2 = -.6,
+#                 raP2G1 = 0,
+#                 ## Within-patients:
+#                 rwG1G2 = 0,
+#                 rwP1P2 = 0, 
+#                 rwP1G1 = 0,
+#                 rwP2G2 = 0,
+#                 rwP1G2 = 0,
+#                 rwP2G1 = 0)
+#                 
 
-Sim$Occ %>%
-  ggplot(aes(x=phi, y=gam, color=factor(Patient))) + 
-  facet_wrap(~Strain) + 
-  geom_point()
+# Sim$Occ[Sim$Occ$Patient<15, ] %>%
+#   ggplot(aes(x=phi, y=gam, color=factor(Patient))) + 
+#   facet_wrap(~Strain) + 
+#   geom_point()
 
-if (n.pat < 300){
-  # this plot makes me doubt whether within-patient effects can be identified
-  Sim$Occ %>%
-    ggplot(aes(x=Visit.Pat, y=psi)) + 
-    geom_line(aes(color=factor(Strain))) + 
-    facet_wrap(~Patient)
-}
+# if (n.pat < 300){
+#   # this plot makes me doubt whether within-patient effects can be identified
+#   Sim$Occ %>%
+#     ggplot(aes(x=Visit.Pat, y=psi)) + 
+#     geom_line(aes(color=factor(Strain))) + 
+#     facet_wrap(~Patient)
+# }
 
 ### Generate variables for stan model input:
 modelInput <- list(
@@ -56,35 +73,37 @@ modelInput <- list(
   X_pat = Sim$Occ$X.pat.vals
 )
 
+rstan_options(auto_write = TRUE)
+options(mc.cores = parallel::detectCores())
+
 nChains <- 3
 iter <- 1200
-modelFile <- "metacommunity_model.stan"
+modelFile <- "metacommunity_model_across_pt_alt.stan"
 
-watch <- c('phi_mean', 'gam_mean', 'psi_mean', 
-           #'beta_pat_mean', 'beta_time_mean', 
-           #'beta_pat_sd', 'beta_time_sd', 
-           #'beta_pat', 'beta_time', 
-           'tau_patient', 'alpha_patient', 
-           'tau_time', 'alpha_time', 
-           'cor_patient', 'psi', 'cor_time'
-           )
-if (!('m_init' %in% ls())){
-  m_init <- stan(modelFile, data=modelInput, iter=10, chains=1, pars='lp__')
-}
+# watch <- c('phi_mean', 'gam_mean', 'psi_mean', 
+#            #'beta_pat_mean', 'beta_time_mean', 
+#            #'beta_pat_sd', 'beta_time_sd', 
+#            #'beta_pat', 'beta_time', 
+#            'tau_patient', 'alpha_patient', 
+#            'tau_time', 'alpha_time', 
+#            'cor_patient', 'psi', 'cor_time'
+#            )
+
+m_init <- stan(modelFile, data=modelInput, iter=10, chains=1, pars='lp__')
+
 fit <- stan(
   fit = m_init, 
   data = modelInput,
   iter = iter,
   chains = nChains, 
-  cores = nChains, 
-  pars = watch)
+  cores = nChains)
 
 traceplot(fit, 'lp__')
 traceplot(fit)
 
-
 post <- extract(fit)
 
+quartz()
 br <- seq(0, .1 + max(post$tau_patient), .1)
 alph <- .4
 par(mfrow=c(modelInput$n_strains * 2, modelInput$n_strains * 2), bty='n')
@@ -107,7 +126,7 @@ for (i in 1:(modelInput$n_strains*2)){
 }
 
 
-
+quartz()
 br <- seq(0, .1 + max(post$tau_time), .1)
 alph <- .2
 par(mfrow=c(modelInput$n_strains * 2, modelInput$n_strains * 2), bty='n')
