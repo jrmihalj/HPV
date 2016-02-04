@@ -98,23 +98,23 @@ sim_func <- function(n.pat = 20,
 # Visualize
 test <- sim_func()
 
-test$pars$Rho.across
-test$pars$betas
+# Choose 2 strains:
+s1 <- 5 #t-1
+s2 <- 3 #t 
 
 #Look at among-patient correlations (across all time samples)
-cor(as.vector(test$pars$psi[,,2]),as.vector(test$pars$psi[,,3]))
-plot(test$pars$psi[,,2]~test$pars$psi[,,3])
+cor(as.vector(test$pars$psi[,,s1]),as.vector(test$pars$psi[,,s2]))
+test$pars$Rho.across[s1,s2]
+plot(test$pars$psi[,,s1]~test$pars$psi[,,s2])
 
-#Look at time effects (e.g. the effect of presence of strain 4 in t-1 on strain 5 in t)
-# Choose 2 strains (look at effect of s1 in t-1 on s2 in t):
-s1 <- 1 #t-1
-s2 <- 3 #t 
+#Look at time effects (e.g. the effect of presence of strain 1 in t-1 on strain 2 in t)
 temp.Y <- mat.or.vec(nr=test$pars$n.pat*(test$pars$n.vis-1), 3) # temp.Y[t-1, t, patient]
-temp.Y[,1] <- as.vector(test$pars$Y[, 1:(test$pars$n.vis-1), s1]) #Choose a strain
-temp.Y[,2] <- as.vector(test$pars$psi[, 2:test$pars$n.vis, s2]) #Choose a strain
-temp.Y[,3] <- rep(c(1:test$pars$n.pat), times=(test$pars$n.vis-1)) #Choose a strain
+temp.Y[,1] <- as.vector(test$pars$Y[, 1:(test$pars$n.vis-1), s1]) 
+temp.Y[,2] <- as.vector(test$pars$psi[, 2:test$pars$n.vis, s2]) 
+temp.Y[,3] <- rep(c(1:test$pars$n.pat), times=(test$pars$n.vis-1))
 
 plot(temp.Y[,2]~temp.Y[,1], xlab=paste("Strain",s1,"t-1"), ylab=paste("Strain",s2, "psi"))
+test$pars$betas[s2,s1]
 
 
 
