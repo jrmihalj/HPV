@@ -18,10 +18,11 @@ sim_func <- function(n.pat = 5,
                      n.vis = 10, 
                      init.psi = 0.5, #Initial occur. prob (0-1)
                      lap.lambda = 0.75, #lambda of the double exponential (laplace) distr.
-                     eta = .4 #For positive definite matrix
+                     eta = .4, #For positive definite matrix
+                     n.strains = 2
   ){
   
-  n.strains <- 2 #number of HPV strains
+  n.strains <- n.strains #number of HPV strains
 
   # Fixed t-1 Species Co-occurrence Covariates (Storage)
   X <- array(dim=c(n.pat,n.vis-1,n.strains))
