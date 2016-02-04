@@ -22,8 +22,6 @@ sim_func <- function(n.pat = 20,
                      eta = .4 #For positive definite matrix
   ){
   
-  n.strains <- n.strains #number of HPV strains
-
   # Fixed t-1 Species Co-occurrence Covariates (Storage)
   X <- array(dim=c(n.pat,n.vis-1,n.strains))
   
@@ -41,19 +39,20 @@ sim_func <- function(n.pat = 20,
   Rho.across <- cov2cor(Sig.across)
 
   # Draw the random effects:
-  eij <- NULL #Indexed eij[Patient,Strain]
-  eij <- rmnorm(n.pat, mean = rep(0, n.strains), varcov=Sig.across) # patient-level
+  alpha.ij <- NULL #Indexed alpha.ij[Patient,Strain]
+  alpha.ij <- rmnorm(n.pat, mean = rep(0, n.strains), varcov=Sig.across) # patient-level
   
-  cov.eff <- array(dim=c(n.pat,n.vis,n.strains))
-  lpsi <- array(dim=c(n.pat,n.vis,n.strains))
-  psi <- array(dim=c(n.pat,n.vis,n.strains))
-  Y <- array(dim=c(n.pat,n.vis,n.strains)) # Y[Patient, Strain, Observation]
+  # Storage for looping
+  cov.eff <- array(dim=c(n.pat,n.vis,n.strains)) #Summed covariate effects
+  lpsi <- array(dim=c(n.pat,n.vis,n.strains)) #psi on logit scale
+  psi <- array(dim=c(n.pat,n.vis,n.strains)) #psi in probability space
+  Y <- array(dim=c(n.pat,n.vis,n.strains)) #Y[Patient, Visit, Strain]
   
-  for(i in 1:n.pat){
+  for(i in 1:n.pat){ # Patient
     
-    for(j in 1:n.vis){
+    for(j in 1:n.vis){ # Visit/Observation
       
-      for(k in 1:n.strains){
+      for(k in 1:n.strains){ # Strain/Species
         
         if(j == 1){ # For first observation, no cov. effects
           cov.eff[i,j,k] <- 0
@@ -61,7 +60,7 @@ sim_func <- function(n.pat = 20,
           cov.eff[i,j,k] <- sum(betas[k,] * X[i,j-1,])
         }
         
-        lpsi[i,j,k] <- Logit(init.psi) + cov.eff[i,j,k] + eij[i,k]
+        lpsi[i,j,k] <- Logit(init.psi) + cov.eff[i,j,k] + alpha.ij[i,k]
         psi[i,j,k] <- AntiLogit(lpsi[i,j,k])
         
         Y[i,j,k] <- rbinom(1,1,psi[i,j,k])
@@ -79,13 +78,13 @@ sim_func <- function(n.pat = 20,
   
   # Create a data.frame
   Occ <- data.frame(Patient, Visit, Strain, psi_m, Y_m)
-  pars <- list(eij = eij,
+  pars <- list(alpha.ij = alpha.ij,
                X = X,
                Y = Y,
                psi = psi,
                betas = betas,
-               Sig.across=Sig.across, #Sig.within=Sig.within, 
-               Rho.across=Rho.across)#, Rho_within=Rho_within)
+               Sig.across=Sig.across,
+               Rho.across=Rho.across)
   return(list(Occ=Occ, pars=pars))
 }
 
