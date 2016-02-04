@@ -15,59 +15,34 @@ data
 parameters 
 {
   // intercepts
-  real phi_mean ; // global mean of colonization probability
-  real gam_mean; // global mean of vacancy probability 
-  real psi_mean; // initial occupancy probability
+  real psi_initial; // initial occupancy probability
   
   // params of fixed effects 
   vector[n_strains] betas[n_strians];
 
   // random  patient effects
-	cholesky_factor_corr[n_strains] L_patient_phi1_phi2; // 
-	matrix[n_strains , n_patients] z_patient_phi1_phi2;
-	vector<lower=0> [n_strains] tau_patient_phi1_phi2; // across patient std deviations
+	cholesky_factor_corr[n_strains] L_patient; // 
+	matrix[n_strains , n_patients] z_patient;
+	vector<lower=0> [n_strains] tau_patient; // across patient std deviations
 	
+
 	
 }
 
 transformed parameters
 {
-	//persistence and colonization probabilities 
-	vector[n_obs] phi; //time,patient,strain specific colonization probability
-	vector[n_obs] gam; //time,patient,strain specific persistence probability
-	
-	vector<lower=0> [n_strains] tau_patient_phi1_gamma2;
-  	vector<lower=0> [n_strains] tau_patient_gamma1_phi2;
 	
 	// correlations 
-	matrix[n_patients, n_strains] alpha_patient_phi1_phi2;
-	matrix[n_patients, n_strains] alpha_patient_gamma1_phi2;
-	matrix[n_patients, n_strains] alpha_patient_phi1_gamma2;
-	matrix[n_patients, n_strains] alpha_patient_gamma1_gamma2;
+	matrix[n_patients, n_strains] alpha_patient;
 	
 	// occupancy probability 
 	vector<lower=0, upper=1>[n_obs] psi;
 	
 	//between-strain effects
-	real added_effect_phi; // addition of between-strain phi/gam random effect 
-	real added_effect_gam; // addition of between-strain phi/gam random effect 
-	
-	//fixed covariate effects 
-	//vector[n_strains] beta_pat; // fixed across-patients covariate effect
-  	//vector[n_strains] beta_time; // fixed within patient covariate effect 
-  	//beta_pat <- beta_pat_mean + beta_pat_sd * beta_patR;
-  	//beta_time <- beta_time_mean + beta_time_sd * beta_timeR;
-	
-	tau_patient_phi1_gamma2[1] <- tau_patient_phi1_phi2[1];
-	tau_patient_phi1_gamma2[2] <- tau_patient_gamma1_gamma2[2];
-	tau_patient_gamma1_phi2[1] <- tau_patient_gamma1_gamma2[1];
-	tau_patient_gamma1_phi2[2] <- tau_patient_phi1_phi2[2];
+
 	
 	//random effects
-	alpha_patient_phi1_phi2 <- (diag_pre_multiply(tau_patient_phi1_phi2, L_patient_phi1_phi2) * z_patient_phi1_phi2)';
-	alpha_patient_gamma1_gamma2 <- (diag_pre_multiply(tau_patient_gamma1_gamma2, L_patient_gamma1_gamma2) * z_patient_gamma1_gamma2)';
-	alpha_patient_phi1_gamma2 <- (diag_pre_multiply(tau_patient_phi1_gamma2, L_patient_phi1_gamma2) * z_patient_phi1_gamma2)';
-	alpha_patient_gamma1_phi2  <- (diag_pre_multiply(tau_patient_gamma1_phi2, L_patient_gamma1_phi2) * z_patient_gamma1_phi2)';
+	alpha_patient <- (diag_pre_multiply(tau_patient, L_patient) * z_patient)';
 	
 	for(i in 1:n_obs){
 	
