@@ -1,9 +1,9 @@
 data 
 {
-]	int<lower=0> n_strains;
+	int<lower=0> n_strains;
 	int<lower=0> n_obs;
 	int<lower=0> n_patients;
-	int<lower=0> n_visits_total; //total number of clinic visits across patients
+	int<lower=0> n_visits; //total number of clinic visits across patients
 	
 	int<lower=0, upper=1> Y[n_obs]; //occupancy observations
 	int<lower=1, upper=n_strains> strain[n_obs]; // strain for this observation
@@ -21,7 +21,6 @@ parameters
   
   // params of fixed effects 
   vector[n_strains] betas[n_strains];
-  real<lower = 0> beta_mean; //params for betas (Laplace distributed)
   real<lower = 0> beta_scale;
 
   // random  patient effects
@@ -33,7 +32,8 @@ parameters
 
 transformed parameters
 {
-	
+	// occupancy probability 
+  vector<lower=0, upper=1>[n_obs] psi;
 	// correlations 
 	matrix[n_patients, n_strains] alpha_patient;
 	vector[n_strains] cov_effects[n_patients, n_strains];	
@@ -44,33 +44,28 @@ transformed parameters
 	for(i in 1:n_obs){
 	//temporary params
 	real lpsi;
-	real covs;
+	matrix[n_patients, n_strains] covs;
 	  if(visit_pat[i] == 1){
   	  	psi[i] <- inv_logit(psi_initial);
-  	  } // end if
-  	  
-  	  else {
+  	  }else {
   	 	 covs <- X[visit_pat[i] - 1]; // n_pat x n_strain profile for previous visit 
-		 cov_effect <- dot_product(betas[strain[i]], covs[patient[i]]);  
-  	  	 lpsi <- logit(psi_initial) + cov_effect + alpha_patient[patient[i],strain[i]];
+		   cov_effect <- dot_product(betas[strain[i]], covs[patient[i]]);  
+  	   lpsi <- logit(psi_initial) + cov_effect + alpha_patient[patient[i],strain[i]];
   	 	 psi[i] <- inv_logit(lpsi);
   	  }// end else
 	}// end n_obs
 }
 
 model {
-	
-  // occupancy probability 
-  vector<lower=0, upper=1>[n_obs] psi;
+
   
   //Priors: 
   //prior on psi 
   psi_initial ~ normal(0, .5);
   
   // prior on fixed covariate effects
-  beta_mean ~ normal(0, 1.5);
   //beta_scale -???
-  beta ~ double_exponential(beta_mean, beta_sigma);
+  beta ~ double_exponential(0, beta_scale);
   
   // prior on patient random effects
   L_patient ~ lkj_corr_cholesky(2);
@@ -78,10 +73,7 @@ model {
   to_vector(z_patient) ~ normal(0, 1);
 
   // likelihood of occupancy
-  for( i in 1:nObs){
-  	if( i == 1) {
-  		Y[i] ~ bernoulli(psi)
-  } // end if 
+  Y ~ bernoulli(psi);
 
 } // end model block
 

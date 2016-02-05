@@ -12,25 +12,30 @@ library(scales)
 
 Sim <- sim_func()
 Occ <- Sim$Occ
-df <- data.frame(pat = Occ$Patient, visit = Occ$Visit, strain = Occ$Strain, Y = Occ$Y)
-for( i in 1:length(unique(df$visit))){
-  sub_df <- subset(df, visit == unique(df$visit)[i])
-  sub_df$visit <- NULL
-  sub_df2 <- reshape(sub_df, idvar = "patient", timevar = "strain", direction = "wide")
+df <- data.frame(pat = Occ$Patient, visit = Occ$Visit, strain = Occ$Strain, Y = Occ$Y_m)
+
+l_df <- split(df, df$visit )
+l_df <- lapply(l_df, function(x) { x["visit"] <- NULL; x })
+l_df <- lapply(l_df, reshape, idvar = "pat", timevar = "strain", direction = "wide")
+l_df <- lapply(l_df, function(x) { x["pat"] <- NULL; x })
+
+X <- array(NA, dim=c(Sim$pars$n.pat, Sim$pars$n.strains, Sim$pars$n.vis))
+
+for(i in 1:Sim$pars$n.vis){
+  X[,,i] <- as.matrix(l_df[[i]])
 }
-#l_df <- split(df, df$visit )
-#l_df <- lapply(l_df, function(x) { x["visit"] <- NULL; x })
-#l_df <- as.matrix(lapply(l_df, reshape, idvar = "patient", timevar = "strain", direction = "wide") )
+
 ### Generate variables for stan model input:
-modelInput <- list(ccc
+modelInput <- list(
   n_strains = length(unique(Occ$Strain)),
   n_obs = nrow(Occ),
   n_patients = length(unique(Occ$Patient)),
-  n_visits_total = max(Occ$Visit),
+  n_visits = max(Occ$Visit),
   Y = Occ$Y_m,
   strain = Occ$Strain,
   patient = Occ$Patient,
   visit_pat = Sim$Occ$Visit,
+  X = X
 )
 
 rstan_options(auto_write = TRUE)
@@ -38,11 +43,11 @@ options(mc.cores = parallel::detectCores())
 
 nChains <- 3
 iter <- 1200
-modelFile <- "metacommunity_model_across_pt_alt.stan"
+modelFile <- "longitudinal_model.stan"
 
 fit <- stan(
-  fit = m_init, 
   data = modelInput,
+  file = modelFile,
   iter = iter,
   chains = nChains, 
   cores = nChains)
