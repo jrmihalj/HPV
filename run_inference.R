@@ -12,10 +12,17 @@ library(scales)
 
 Sim <- sim_func()
 Occ <- Sim$Occ
-df <- data.frame(pat = Occ$Patient, strain = Occ$Strain, Y = Occ$Y_m)
-
+df <- data.frame(pat = Occ$Patient, visit = Occ$Visit, strain = Occ$Strain, Y = Occ$Y)
+for( i in 1:length(unique(df$visit))){
+  sub_df <- subset(df, visit == unique(df$visit)[i])
+  sub_df$visit <- NULL
+  sub_df2 <- reshape(sub_df, idvar = "patient", timevar = "strain", direction = "wide")
+}
+#l_df <- split(df, df$visit )
+#l_df <- lapply(l_df, function(x) { x["visit"] <- NULL; x })
+#l_df <- as.matrix(lapply(l_df, reshape, idvar = "patient", timevar = "strain", direction = "wide") )
 ### Generate variables for stan model input:
-modelInput <- list(
+modelInput <- list(ccc
   n_strains = length(unique(Occ$Strain)),
   n_obs = nrow(Occ),
   n_patients = length(unique(Occ$Patient)),

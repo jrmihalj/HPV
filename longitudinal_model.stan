@@ -21,7 +21,7 @@ parameters
   
   // params of fixed effects 
   vector[n_strains] betas[n_strains];
-  real<lower = 0> beta_mean; //params for betas (laplace distributed)
+  real<lower = 0> beta_mean; //params for betas (Laplace distributed)
   real<lower = 0> beta_scale;
 
   // random  patient effects
@@ -36,7 +36,7 @@ transformed parameters
 	
 	// correlations 
 	matrix[n_patients, n_strains] alpha_patient;
-	vector[n.strains] cov_effects[n_patients, n_strains];	
+	vector[n_strains] cov_effects[n_patients, n_strains];	
 
 	//random effects
 	alpha_patient <- (diag_pre_multiply(tau_patient, L_patient) * z_patient)';
@@ -51,10 +51,9 @@ transformed parameters
   	  
   	  else {
   	 	 covs <- X[visit_pat[i] - 1]; // n_pat x n_strain profile for previous visit 
-		 cov_effect <- dot_product(betas[strain[i]], covs[patient[i]]0 ;  
+		 cov_effect <- dot_product(betas[strain[i]], covs[patient[i]]);  
   	  	 lpsi <- logit(psi_initial) + cov_effect + alpha_patient[patient[i],strain[i]];
-  	 	 psi[i] <- phi[i-n_strains] * psi[i-n_strains] 
-  	               + gam[i-n_strains] * (1 - psi[i-n_strains]);  
+  	 	 psi[i] <- inv_logit(lpsi);
   	  }// end else
 	}// end n_obs
 }
@@ -64,7 +63,6 @@ model {
   // occupancy probability 
   vector<lower=0, upper=1>[n_obs] psi;
   
-  
   //Priors: 
   //prior on psi 
   psi_initial ~ normal(0, .5);
@@ -72,7 +70,7 @@ model {
   // prior on fixed covariate effects
   beta_mean ~ normal(0, 1.5);
   //beta_scale -???
-  beta ~ laplace(beta_mean, beta_sigma);
+  beta ~ double_exponential(beta_mean, beta_sigma);
   
   // prior on patient random effects
   L_patient ~ lkj_corr_cholesky(2);
