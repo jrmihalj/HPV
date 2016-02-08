@@ -22,6 +22,7 @@ parameters
   // params of fixed effects 
   vector[n_strains] betas[n_strains];
   real<lower = 0> beta_scale;
+  real<lower = 0> beta_mean;
 
   // random  patient effects
   cholesky_factor_corr[n_strains] L_patient; // 
@@ -33,10 +34,9 @@ parameters
 transformed parameters
 {
 	// occupancy probability 
-  vector<lower=0, upper=1>[n_obs] psi;
+    real psi[n_obs];
 	// correlations 
 	matrix[n_patients, n_strains] alpha_patient;
-	vector[n_strains] cov_effects[n_patients, n_strains];	
 
 	//random effects
 	alpha_patient <- (diag_pre_multiply(tau_patient, L_patient) * z_patient)';
@@ -44,13 +44,15 @@ transformed parameters
 	for(i in 1:n_obs){
 	//temporary params
 	real lpsi;
-	matrix[n_patients, n_strains] covs;
+	real cov_effect; 
+	
+	vector [n_patients] covs[n_strains];
 	  if(visit_pat[i] == 1){
   	  	psi[i] <- inv_logit(psi_initial);
   	  }else {
-  	 	 covs <- X[visit_pat[i] - 1]; // n_pat x n_strain profile for previous visit 
-		   cov_effect <- dot_product(betas[strain[i]], covs[patient[i]]);  
-  	   lpsi <- logit(psi_initial) + cov_effect + alpha_patient[patient[i],strain[i]];
+  	 	 covs <- X[visit_pat[i] - 1]; // n_pat x n_strain profile for previous visit
+  	 	 cov_effect <- dot_product(betas[strain[i]], covs[patient[i]]);
+  	 	 lpsi <- logit(psi_initial) + cov_effect + alpha_patient[patient[i],strain[i]];
   	 	 psi[i] <- inv_logit(lpsi);
   	  }// end else
 	}// end n_obs
@@ -58,15 +60,18 @@ transformed parameters
 
 model {
 
-  
+  print(X[1]);
   //Priors: 
   //prior on psi 
   psi_initial ~ normal(0, .5);
   
   // prior on fixed covariate effects
   //beta_scale -???
-  beta ~ double_exponential(0, beta_scale);
-  
+  for( i in 1:n_strains){
+  	for ( j in 1:n_strains){  	
+  		betas[i,j] ~ double_exponential(beta_mean, beta_scale);
+  	}
+  }
   // prior on patient random effects
   L_patient ~ lkj_corr_cholesky(2);
   tau_patient ~ normal(0, 2);
@@ -78,7 +83,7 @@ model {
 } // end model block
 
 generated quantities {
-  matrix[n_strains , n_strains ] cor_patient;
+  matrix[n_strains , n_strains] cor_patient;
   
   // create the correlation matrix to draw random effects
   cor_patient <- multiply_lower_tri_self_transpose(L_patient);
