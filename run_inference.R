@@ -24,7 +24,8 @@ X <- array(NA, dim=c(Sim$pars$n.pat, Sim$pars$n.strains, Sim$pars$n.vis))
 for(i in 1:Sim$pars$n.vis){
   X[,,i] <- as.matrix(l_df[[i]])
 }
-
+ 
+X <- aperm(X, c(3,1,2))
 ### Generate variables for stan model input:
 modelInput <- list(
   n_strains = length(unique(Occ$Strain)),
@@ -41,7 +42,7 @@ modelInput <- list(
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
-nChains <- 3
+nChains <- 2
 iter <- 1200
 modelFile <- "longitudinal_model.stan"
 

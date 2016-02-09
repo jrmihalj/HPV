@@ -10,8 +10,8 @@ data
 	int<lower=1, upper=n_patients> patient[n_obs]; // patient for this observation/strain 
 	int<lower=1> visit_pat[n_obs]; // visit for this patient for this observation/strain
 	
-	vector[n_visits] X[n_patients,n_strains]; // 3D array holding profile at each visit with each strain : could do this in the stan model 
-	
+	//vector[n_visits] X[n_patients, n_strains]; // 3D array holding profile at each visit with each strain : could do this in the stan model 
+	matrix[n_patients,n_strains] X[n_visits];
 }
 	
 parameters 
@@ -46,13 +46,16 @@ transformed parameters
 	real lpsi;
 	real cov_effect; 
 	
-	vector [n_patients] covs[n_strains];
-	  if(visit_pat[i] == 1){
+	//vector [n_strains] covs[n_patients];
+	//vector [n_patients] covs[n_strains];
+	matrix[n_patients, n_strains] covs;
+	
+	if(visit_pat[i] == 1){
   	  	psi[i] <- inv_logit(psi_initial);
   	  }else {
-  	 	 covs <- X[visit_pat[i] - 1]; // n_pat x n_strain profile for previous visit
+  	  	 covs <- X[(visit_pat[i] - 1)]; // n_pat x n_strain profile for previous visit
   	 	 cov_effect <- dot_product(betas[strain[i]], covs[patient[i]]);
-  	 	 lpsi <- logit(psi_initial) + cov_effect + alpha_patient[patient[i],strain[i]];
+  	 	 lpsi <- logit(psi_initial) + alpha_patient[patient[i],strain[i]] + cov_effect;
   	 	 psi[i] <- inv_logit(lpsi);
   	  }// end else
 	}// end n_obs
@@ -60,7 +63,6 @@ transformed parameters
 
 model {
 
-  print(X[1]);
   //Priors: 
   //prior on psi 
   psi_initial ~ normal(0, .5);
