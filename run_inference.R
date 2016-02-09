@@ -19,13 +19,13 @@ l_df <- lapply(l_df, function(x) { x["visit"] <- NULL; x })
 l_df <- lapply(l_df, reshape, idvar = "pat", timevar = "strain", direction = "wide")
 l_df <- lapply(l_df, function(x) { x["pat"] <- NULL; x })
 
-X <- array(NA, dim=c(Sim$pars$n.pat, Sim$pars$n.strains, Sim$pars$n.vis))
+X <- array(NA, dim=c(Sim$pars$n.vis, Sim$pars$n.pat, Sim$pars$n.strains))
 
 for(i in 1:Sim$pars$n.vis){
-  X[,,i] <- as.matrix(l_df[[i]])
+  X[i,,] <- as.matrix(l_df[[i]])
 }
  
-X <- aperm(X, c(3,1,2))
+#X <- aperm(X, c(3,1,2))
 ### Generate variables for stan model input:
 modelInput <- list(
   n_strains = length(unique(Occ$Strain)),
@@ -43,65 +43,45 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
 nChains <- 2
-iter <- 1200
+burn <- 100
+n.thin <- 2
+n.samp <- 1000
+iter <- burn + (n.thin*n.samp)
 modelFile <- "longitudinal_model.stan"
 
+m_init <- NULL
+m_init <- stan(modelFile, data=modelInput, iter=10, chains=1, pars='lp__')
+
+fit <- NULL
 fit <- stan(
   data = modelInput,
   file = modelFile,
+  fit = m_init,
+  warmup = burn,
+  thin = n.thin,
   iter = iter,
-  chains = nChains, 
-  cores = nChains)
+  chains = nChains)
 
-traceplot(fit, 'lp__')
-traceplot(fit)
+stan_trace(fit, 'lp__')
+stan_trace(fit, "betas")
 
 post <- extract(fit)
 
 quartz()
-br <- seq(0, .1 + max(post$tau_patient), .1)
-alph <- .4
-par(mfrow=c(modelInput$n_strains * 2, modelInput$n_strains * 2), bty='n')
-for (i in 1:(modelInput$n_strains*2)){
-  for (j in 1:(modelInput$n_strains*2)){
-    if (i == j){
-      hist(post$tau_patient[, i], breaks=br, main='', yaxt='n', col='grey', 
-           ylab='')
-      abline(v=sqrt(Sim$pars$Sig.across[i, j]), col='red', lty=2, lwd=2)
-    } else if (i < j) {
-        plot(density(post$cor_patient[, i, j]), main='', yaxt='n', xlab='', 
-             xlim=c(-1, 1), ylab='')
-        abline(v=Sim$pars$Rho_across[i, j])
-      } else if (i > j) {
-        i_m <- apply(post$alpha_patient[, , i], 2, median)
-        j_m <- apply(post$alpha_patient[, , j], 2, median)
-        plot(i_m, j_m, col=alpha(1, alph), cex=.4)
-      }
-  }
-}
-
+stan_plot(fit, "cor_patient")
 
 quartz()
-br <- seq(0, .1 + max(post$tau_time), .1)
-alph <- .2
-par(mfrow=c(modelInput$n_strains * 2, modelInput$n_strains * 2), bty='n')
-for (i in 1:(modelInput$n_strains*2)){
-  for (j in 1:(modelInput$n_strains*2)){
-    if (i == j){
-      hist(post$tau_time[, i], breaks=br, main='', yaxt='n', col='grey', 
-           ylab='')
-      abline(v=sqrt(Sim$pars$Sig.within[i, j]), col='red', lty=2, lwd=2)
-    } else if (i < j) {
-      plot(density(post$cor_time[, i, j]), main='', yaxt='n', xlab='', 
-           xlim=c(-1, 1), ylab='')
-      abline(v=Sim$pars$Rho_within[i, j])
-    } else if (i > j) {
-      i_m <- apply(post$alpha_time[, , i], 2, median)
-      j_m <- apply(post$alpha_time[, , j], 2, median)
-      plot(i_m, j_m, col=alpha(1, alph), cex=.4)
-    }
+par(mfrow=c(modelInput$n_strains, modelInput$n_strains), bty="n")
+for(i in 1:modelInput$n_strains){
+  for(j in 1:modelInput$n_strains){
+    
+    hist(post$betas[,i,j], main="", xlab=paste("Strains ", i, ",", j, sep=""))
+    abline(v=Sim$pars$betas[i,j])
+    
   }
 }
+
+
 
 summary <- summary(fit)$summary
 library(ggmcmc)
