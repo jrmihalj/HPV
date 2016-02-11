@@ -12,7 +12,7 @@ str(stan_d)
 watch <- c('beta', 'beta_intxn', 'R')
 
 m_fit <- stan('probit/probit.stan', data = stan_d, cores = 2, chains = 2, 
-              iter = 800, pars = watch)
+              iter = 800, pars = watch, init_r = .1)
 
 traceplot(m_fit, 'lp__')
 
