@@ -3,6 +3,7 @@ data {
   int m; // number of species
   int k; // number of columns in design matrix
   matrix[n, k] X; // design matrix
+  matrix[n, m] X_intxn; // interaction design matrix
   int<lower = 0, upper = 1> y[n, m]; // presence/absence observations
 }
 
@@ -10,6 +11,7 @@ parameters {
   cholesky_factor_corr[m] L_R;
   matrix[k, m] beta;
   matrix[n, m] e_raw;
+  matrix[m, m] beta_intxn;
 }
 
 transformed parameters {
@@ -19,7 +21,7 @@ transformed parameters {
   
   e <- e_raw * L_R;
   
-  mu <- X * beta;
+  mu <- X * beta + X_intxn * beta_intxn;
   {
     // temporary scope for logit of cdf of e
     matrix[n, m] e_tmp;
@@ -36,6 +38,12 @@ model {
   L_R ~ lkj_corr_cholesky(2);
   to_vector(e_raw) ~ normal(0, 1);
   to_vector(beta) ~ normal(0, 1);
+  
+  for (i in 1:m) {
+    for (j in 1:m) {
+      beta_intxn[i, j] ~ double_exponential(0, 1);
+    }
+  }
   
   for (i in 1:n){
     for (j in 1:m){
