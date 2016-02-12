@@ -46,7 +46,7 @@ plot(m_fit, pars = 'R_p') +
 # evaluate recovery of R_o
 traceplot(m_fit, pars = 'R_o', inc_warmup = TRUE)
 Ro_df <- data.frame(Ro = c(Ro), y = (m^2):1)
-plot(m_fit, pars = 'R_p') + 
+plot(m_fit, pars = 'R_o') + 
   geom_point(data = Ro_df, aes(x = Ro, y = y), 
              size = 4, col = 'blue') + 
   ggtitle('Recovery of observation-level correlations')
