@@ -6,22 +6,43 @@ library(smoothmest)
 # define parameters -------------------------------------
 m <- 3                    # species
 n_timesteps <- 11          # visits/repeat observations
-n_site <- 100               # locations/patients
+n_site <- 150               # locations/patients
 n <- n_timesteps * n_site # number of observations
 time <- rep(1:n_timesteps, each = n_site)
 site <- rep(1:n_site, n_timesteps)
 
+# Patient-level corr matrix
+Rp <- genPositiveDefMat(dim=m, #Number of columns/rows
+                        covMethod = 'onion', 
+                        rangeVar = c(1, 1), # Range of variances
+                        eta=2)$Sigma
+
+# observation-level ranefs
+ep <- matrix(nrow = n_site, ncol = m)
+for (i in 1:n_site){
+  ep[i, ] <- rnorm(m) %*% t(chol(Rp))
+}
+
 # observation-level corr matrix
-R <- genPositiveDefMat(dim=m, #Number of columns/rows
+Ro <- genPositiveDefMat(dim=m, #Number of columns/rows
                        covMethod = 'onion', 
                        rangeVar = c(1, 1), # Range of variances
                        eta=2)$Sigma
 
 # observation-level ranefs
-e <- matrix(nrow = n, ncol = m)
+eo <- matrix(nrow = n, ncol = m)
 for (i in 1:n){
-  e[i, ] <- rnorm(m) %*% t(chol(R))
+  eo[i, ] <- rnorm(m) %*% t(chol(Ro))
 }
+
+# Add the ranef
+e_all <- matrix(nrow = n, ncol = m)
+for(i in 1:n){
+  e_all[i, ] <- ep[site[i], ] + eo[i, ]
+}
+
+# Normalize
+e_all <- (e_all - mean(e_all)) / sd(e_all)
 
 # fixed effects design matrix, parameters, and linear predictor
 # (note currently this is an intercept-only model, but X could be expanded)
@@ -31,7 +52,7 @@ beta <- matrix(rnorm(m * k), nrow = k)
 
 # begin by simulating the state at time = 1
 mu <- X %*% beta
-z <- mu + qlogis(pnorm(e))
+z <- mu + qlogis(pnorm(e_all))
 y <- matrix(nrow = n, ncol = m)
 y[time == 1, ] <- ifelse(z[time == 1, ] > 0, 1, 0)
 

@@ -4,15 +4,18 @@ rstan_options(auto_write = TRUE)
 stan_d <- list(n = nrow(y_use), 
                m = m, 
                k = k, 
+               n_unit = n_site,
+               unit = site[1:nrow(y_use)],
                X = X_use, 
                X_intxn = X_intxn,
                y = y_use)
 str(stan_d)
 
-watch <- c('beta', 'beta_intxn', 'R')
+watch <- c('beta', 'beta_intxn', 'R_p', 'R_o')
 
+m_fit <- NULL
 m_fit <- stan('probit/probit.stan', data = stan_d, cores = 2, chains = 2, 
-              iter = 800, pars = watch, init_r = .1)
+              iter = 1000, pars = watch, init_r = .1)
 
 traceplot(m_fit, 'lp__')
 
@@ -32,10 +35,18 @@ plot(m_fit, pars = 'beta_intxn') +
              size = 4, col = 'blue') + 
   ggtitle('Recovery of species interaction t - 1 to t effects')
 
-# evaluate recovery of R
-traceplot(m_fit, pars = 'R', inc_warmup = TRUE)
-R_df <- data.frame(R = c(R), y = (m^2):1)
-plot(m_fit, pars = 'R') + 
-  geom_point(data = R_df, aes(x = R, y = y), 
+# evaluate recovery of R_p
+traceplot(m_fit, pars = 'R_p', inc_warmup = TRUE)
+Rp_df <- data.frame(Rp = c(Rp), y = (m^2):1)
+plot(m_fit, pars = 'R_p') + 
+  geom_point(data = Rp_df, aes(x = Rp, y = y), 
+             size = 4, col = 'blue') + 
+  ggtitle('Recovery of patient-level correlations')
+
+# evaluate recovery of R_o
+traceplot(m_fit, pars = 'R_o', inc_warmup = TRUE)
+Ro_df <- data.frame(Ro = c(Ro), y = (m^2):1)
+plot(m_fit, pars = 'R_p') + 
+  geom_point(data = Ro_df, aes(x = Ro, y = y), 
              size = 4, col = 'blue') + 
   ggtitle('Recovery of observation-level correlations')
