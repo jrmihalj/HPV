@@ -65,7 +65,7 @@ transformed parameters{
     }
     
     
-    z_phi <- e_all_phi; // ignore fixed effects for now 
+  z_phi <- e_all_phi; // ignore fixed effects for now 
 	z_gam <- e_all_gam; // ignore fixed effects for now 
 	}
 	
@@ -74,12 +74,12 @@ transformed parameters{
 	gam <- Phi(z_gam);
 
  
-	for (j in 1:n_obs){
-      	for (k in 1:n_strains){
+	for (k in 1:n_strains){
+      	for (j in 1:n_obs){
         	if (visit[j] == 1) {
           		psi[j, k] <- inv_logit(psi0[j, k]);
         	} else {
-          		psi[j, k] <- z[j,k] * phi[j - n_patients, k] + (1 - z[j - n_patients, k]) * gam[j,k];
+          		psi[j, k] <- z[j - n_patients, k] * phi[j - n_patients, k] + (1 - z[j - n_patients, k]) * gam[j - n_patients, k];
         	}
       	}
     }
@@ -93,13 +93,13 @@ model {
   sd_psi0 ~ normal(0, 1);
   to_vector(psi0) ~ normal(mu_psi0, sd_psi0);
   
-  for (i in 1:n_patients){
+  
+  for (k in 1:n_strains){
     for (j in 1:n_obs){
-      for (k in 1:n_strains){
-        z[i, j, k] ~ bernoulli(psi[i, j, k]);
-      }
+      z[j, k] ~ bernoulli(psi[j, k]);
     }
   }
+  
 } // end model block
 
 generated quantities {
