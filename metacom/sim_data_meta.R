@@ -26,7 +26,7 @@ Rp <- genPositiveDefMat(dim=m * 2, #Number of columns/rows (phi and gamma for ea
                         rangeVar = c(1, 1), # Range of variances
                         eta=2)$Sigma
 
-# observation-level ranefs
+# patient-level ranefs
 ep <- matrix(nrow = n_site, ncol = m * 2)
 for (i in 1:n_site){
   ep[i, ] <- rnorm(m * 2) %*% t(chol(Rp))
@@ -60,7 +60,8 @@ e_all <- (e_all - mean(e_all)) / sd(e_all)
 # (note currently this is an intercept-only model, but X could be expanded)
 k_phi <- 1
 X_phi <- matrix(1, nrow = n, ncol = k_phi)
-beta_phi <- matrix(rnorm(m * k_phi), nrow = k_phi)
+#beta_phi <- matrix(rnorm(m * k_phi), nrow = k_phi)
+beta_phi <- matrix(rep(0,m*k_phi), nrow=k_phi)
 
 mu_phi <- X_phi %*% beta_phi
 z_phi <- mu_phi + qlogis(pnorm(e_all[,1:m]))
@@ -72,7 +73,8 @@ z_phi <- mu_phi + qlogis(pnorm(e_all[,1:m]))
 # (note currently this is an intercept-only model, but X could be expanded)
 k_gam <- 1
 X_gam <- matrix(1, nrow = n, ncol = k_gam)
-beta_gam <- matrix(rnorm(m * k_gam), nrow = k_gam)
+#beta_gam <- matrix(rnorm(m * k_gam), nrow = k_gam)
+beta_gam <- matrix(rep(0,m*k_phi), nrow=k_phi)
 
 mu_gam <- X_gam %*% beta_gam
 z_gam <- mu_gam + qlogis(pnorm(e_all[,(m+1):ncol(e_all)]))
