@@ -2,11 +2,12 @@ data {
 	int<lower=0> n_strains;
 	int<lower=0> n_patients;
 	int<lower=0> n_obs; //total number of clinic visits across patients
-	int<lower=0, upper=1> z[n_patients, n_obs, n_strains]; //occupancy observations
+	int<lower=0> visit[n_obs];
+	int<lower=0> patient[n_obs];
+	int<lower=0, upper=1> z[n_obs, n_strains]; //occupancy observations
 }
 
 parameters {
-  // random effects
   matrix<lower=0, upper=1>[n_patients, n_strains] psi0;
   real mu_psi0;
   real<lower=0> sd_psi0;
@@ -19,15 +20,15 @@ parameters {
 }
 
 transformed parameters{
-	real<lower=0, upper=1> phi[n_patients, n_obs, n_strains]; // colonization
-	real<lower=0, upper=1> gam[n_patients, n_obs, n_strains]; // persistence
+	real<lower=0, upper=1> phi[n_obs, n_strains]; // colonization
+	real<lower=0, upper=1> gam[n_obs, n_strains]; // persistence
 	
-	real<lower=0, upper=1> z_phi[n_patients, n_obs, n_strains]; 
-	real<lower=0, upper=1> z_gam[n_patients, n_obs, n_strains]; 
+	real<lower=0, upper=1> z_phi[n_obs, n_strains]; 
+	real<lower=0, upper=1> z_gam[n_obs, n_strains]; 
 	
 	matrix[n_patients, n_strains * 2] alpha_patient;
 	matrix[n_obs, n_strains * 2] alpha_time;
-	real<lower=0, upper=1> psi[n_patients, n_obs, n_strains];
+	real<lower=0, upper=1> psi[n_obs, n_strains];
 	
 	//random effects
 	//random effects
@@ -36,19 +37,19 @@ transformed parameters{
 	
 	
 	{// temporary scope for logit of cdf of error terms
-    real e_tmp_phi[n_patients, n_obs, n_strains];
-    real e_tmp2_phi[n_patients, n_obs, n_strains];
-    real e_all_phi[n_patients, n_obs, n_strains];
+    real e_tmp_phi[n_obs, n_strains];
+    real e_tmp2_phi[n_obs, n_strains];
+    real e_all_phi[n_obs, n_strains];
     
-    real e_tmp_gam[n_patients, n_obs, n_strains];
-    real e_tmp2_gam[n_patients, n_obs, n_strains];
-    real e_all_gam[n_patients, n_obs, n_strains];
+    real e_tmp_gam[n_obs, n_strains];
+    real e_tmp2_gam[n_obs, n_strains];
+    real e_all_gam[n_obs, n_strains];
  
- 	for(k in 1:n_patients){
- 		for(j in 1:n_strains){
- 			for (i in 1:n_obs){
-    			e_tmp_phi[i,j,k] <- alpha_patient[k,j] + alpha_time[i,j];
-    			e_tmp_gam[i,j,k] <- alpha_patient[k, j + n_strains] + alpha_time[i, j + n_strains];
+ 	for(j in 1:n_strains){
+ 		for (i in 1:n_obs){
+    		e_tmp_phi[i,j] <- alpha_patient[patient[i],j] + alpha_time[i,j];
+    		e_tmp_gam[i,j] <- alpha_patient[patient[i], j + n_strains] + alpha_time[i, j + n_strains];
+    	}
     }
 
     //Normalize
@@ -56,12 +57,10 @@ transformed parameters{
     e_tmp2_gam <-  (e_tmp_gam - mean(e_tmp_gam))/sd(e_tmp_gam);
     
    
-   for(k in 1:n_patients){
- 		for(j in 1:n_strains){
- 			for (i in 1:n_obs){
-    			e_all_phi[i,j,k] <- logit(Phi(e_tmp2_phi[i,j,k] ));
-    			e_all_gam[i,j,k] <- logit(Phi(e_tmp2_gam[i,j,k] ));
-    		}
+ 	for(j in 1:n_strains){
+ 		for (i in 1:n_obs){
+    		e_all_phi[i,j] <- logit(Phi(e_tmp2_phi[i,j] ));
+    		e_all_gam[i,j] <- logit(Phi(e_tmp2_gam[i,j] ));
     	}
     }
     
@@ -74,17 +73,16 @@ transformed parameters{
 	phi <- Phi(z_phi);
 	gam <- Phi(z_gam);
 
-	for (i in 1:n_patients) { 
-		for (j in 1:n_obs){
-      		for (k in 1:n_strains){
-        		if (j == 1) {
-          			psi[i, j, k] <- inv_logit(psi0[i, k]);
-        		} else {
-          			psi[i, j, k] <- z[i, j - 1, k] * phi[i, j - 1, k] + (1 - z[i, j - 1, k]) * gam[i, j - 1, k];
-        		}
-      		}
-    	}
-  	}
+ 
+	for (j in 1:n_obs){
+      	for (k in 1:n_strains){
+        	if (visit[j] == 1) {
+          		psi[j, k] <- inv_logit(psi0[j, k]);
+        	} else {
+          		psi[j, k] <- z[j,k] * phi[j - n_patients, k] + (1 - z[j - n_patients, k]) * gam[j,k];
+        	}
+      	}
+    }
 }
 
 model {
