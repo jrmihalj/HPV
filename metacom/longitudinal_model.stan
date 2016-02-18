@@ -13,7 +13,7 @@ parameters {
 	
   // random effects
   matrix[n_patients, n_strains * 2] alpha_raw_patient; // * 2 b/c inc. phi & gamma
-  matrix[n_obsits_total, n_strains * 2] alpha_raw_time;
+  matrix[n_obs, n_strains * 2] alpha_raw_time;
   cholesky_factor_corr[n_strains * 2] L_patient; 
   cholesky_factor_corr[n_strains * 2] L_time;
 }
@@ -36,13 +36,13 @@ transformed parameters{
 	
 	
 	{// temporary scope for logit of cdf of error terms
-    real[n_patients, n_obs, n_strains] error_tmp_phi;
-    real[n_patients, n_obs, n_strains] error_tmp2_phi;
-    real[n_patients, n_obs, n_strains] error_all_phi;
+    real e_tmp_phi[n_patients, n_obs, n_strains];
+    real e_tmp2_phi[n_patients, n_obs, n_strains];
+    real e_all_phi[n_patients, n_obs, n_strains];
     
-    real[n_patients, n_obs, n_strains] error_tmp_gam;
-    real[n_patients, n_obs, n_strains] error_tmp2_gam;
-    real[n_patients, n_obs, n_strains] error_all_gam;
+    real e_tmp_gam[n_patients, n_obs, n_strains];
+    real e_tmp2_gam[n_patients, n_obs, n_strains];
+    real e_all_gam[n_patients, n_obs, n_strains];
  
  	for(k in 1:n_patients){
  		for(j in 1:n_strains){

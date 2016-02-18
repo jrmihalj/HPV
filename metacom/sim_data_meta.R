@@ -91,3 +91,4 @@ for (i in 2:n_timesteps) {
   z_tot[time == i, ] <- y[time == i - 1, ] * z_phi[time == i - 1, ] + (1 - y[time == i - 1, ]) * z_gam[time == i - 1, ]
   y[time == i, ] <- ifelse(z_tot[time == i, ] > 0, 1, 0)
 }
+
