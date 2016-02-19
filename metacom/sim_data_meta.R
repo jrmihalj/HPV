@@ -14,8 +14,8 @@ AntiLogit <- function(x){
 
 # define parameters -------------------------------------
 m <- 2                   # species
-n_timesteps <- 11          # visits/repeat observations
-n_site <- 150               # locations/patients
+n_timesteps <- 21          # visits/repeat observations
+n_site <- 100               # locations/patients
 n <- n_timesteps * n_site # number of observations
 time <- rep(1:n_timesteps, each = n_site)
 site <- rep(1:n_site, n_timesteps)
@@ -24,7 +24,7 @@ site <- rep(1:n_site, n_timesteps)
 Rp <- genPositiveDefMat(dim=m * 2, #Number of columns/rows (phi and gamma for each species)
                         covMethod = 'onion', 
                         rangeVar = c(1, 1), # Range of variances
-                        eta=2)$Sigma
+                        eta=1)$Sigma
 
 # patient-level ranefs
 ep <- matrix(nrow = n_site, ncol = m * 2)
@@ -36,7 +36,7 @@ for (i in 1:n_site){
 Ro <- genPositiveDefMat(dim=m *2 , #Number of columns/rows
                         covMethod = 'onion', 
                         rangeVar = c(1, 1), # Range of variances
-                        eta=2)$Sigma
+                        eta=1)$Sigma
 
 # observation-level ranefs
 eo <- matrix(nrow = n, ncol = m * 2)
@@ -51,7 +51,11 @@ for(i in 1:n){
 }
 
 # Normalize
-e_all <- (e_all - mean(e_all)) / sd(e_all)
+e_phi <- e_all[,1:m]
+e_phi <- (e_phi - mean(e_phi)) / sd(e_phi)
+
+e_gam <- e_all[,(m+1):ncol(e_all)]
+e_gam <- (e_gam - mean(e_gam)) / sd(e_gam)
 
 #######
 # PHI #
@@ -64,7 +68,7 @@ X_phi <- matrix(1, nrow = n, ncol = k_phi)
 beta_phi <- matrix(rep(0,m*k_phi), nrow=k_phi)
 
 mu_phi <- X_phi %*% beta_phi
-z_phi <- mu_phi + qlogis(pnorm(e_all[,1:m]))
+z_phi <- mu_phi + qlogis(pnorm(e_phi))
 
 #########
 # GAMMA #
@@ -77,7 +81,7 @@ X_gam <- matrix(1, nrow = n, ncol = k_gam)
 beta_gam <- matrix(rep(0,m*k_phi), nrow=k_phi)
 
 mu_gam <- X_gam %*% beta_gam
-z_gam <- mu_gam + qlogis(pnorm(e_all[,(m+1):ncol(e_all)]))
+z_gam <- mu_gam + qlogis(pnorm(e_gam))
 
 #######
 # PSI #
