@@ -21,8 +21,6 @@ parameters {
 transformed parameters {
   matrix[n, m] mu_phi;
   matrix[n, m] mu_gam;
-  vector[n] sum_phi;
-  vector[n] sum_gam;
   matrix[n, m] z;
   matrix[n, m] e_o;
   matrix[n_unit, m] e_p;
@@ -32,11 +30,6 @@ transformed parameters {
   
   mu_phi <- y_mat * beta_phi;
   mu_gam <- y_mat * beta_gam;
-  
-  for(i in 1:n){
-    sum_phi[i] <- sum(mu_phi[i,]);
-    sum_gam[i] <- sum(mu_phi[i,]);
-  }
 
   {
     // temporary scope for logit of cdf of e
@@ -64,8 +57,8 @@ transformed parameters {
         if (time[i] == 1) {
             z[i, j] <- e_all[i, j];
         } else {//Current visit depends on previous visit
-            z[i, j] <- (y_mat[i - n_unit, j]) * sum_phi[i] + //persistence
-            		       (1 - y_mat[i - n_unit, j]) * sum_gam[i] + //colonization
+            z[i, j] <- (y_mat[i - n_unit, j]) * mu_phi[i-n_unit,j] + //persistence
+            		       (1 - y_mat[i - n_unit, j]) * mu_gam[i-n_unit,j] + //colonization
             		       e_all[i, j]; //correlated and nested ranef
         }
       }

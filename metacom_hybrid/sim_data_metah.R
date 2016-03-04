@@ -18,7 +18,7 @@ AntiLogit <- function(x){
 
 # define parameters -------------------------------------
 m <- 2                   # species
-n_timesteps <- 11          # visits/repeat observations
+n_timesteps <- 21          # visits/repeat observations
 n_site <- 100               # locations/patients
 n <- n_timesteps * n_site # number of observations
 time <- rep(1:n_timesteps, each = n_site)
