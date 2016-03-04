@@ -20,7 +20,8 @@ m_init <- NULL
 m_init <- stan('metah.stan', data=stan_d, iter=10, chains=1)
 
 m_fit <- stan(fit = m_init, data=stan_d, warmup=100, iter=1100, chains=2, #cores=3, 
-              pars=c('R_p', 'R_o', 'z', "beta_phi", "beta_gam"))
+              pars=c('R_p', 'R_o', "beta_phi", "beta_gam"),
+              control=list(adapt_delta=0.9))
 
 traceplot(m_fit, pars=c('lp__'))
 

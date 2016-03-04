@@ -13,20 +13,34 @@ parameters {
   cholesky_factor_corr[m] L_R_o;
   cholesky_factor_corr[m] L_R_p;
   matrix[m, m] beta_phi;
-  matrix[m, m] beta_gam;
+  matrix[m, m] beta_gam_raw;
   matrix[n_unit, m] e_raw_p;
   matrix[n, m] e_raw_o;
+  
 }
 
 transformed parameters {
   matrix[n, m] mu_phi;
   matrix[n, m] mu_gam;
+  matrix[m, m] beta_gam;
   matrix[n, m] z;
   matrix[n, m] e_o;
   matrix[n_unit, m] e_p;
 
   e_o <- e_raw_o * L_R_o;
   e_p <- e_raw_p * L_R_p;
+  
+  for(j in 1:m){
+    for(i in 1:m){
+      if(i==j){
+        //This is because doesn't make sense for intra-specific effects on colonization.
+        //By definition, species is not present in t-1
+        beta_gam[i,j] <- 0;
+      }else{
+        beta_gam[i,j] <- beta_gam_raw[i,j];
+      }
+    }
+  }
   
   mu_phi <- y_mat * beta_phi;
   mu_gam <- y_mat * beta_gam;
@@ -57,8 +71,8 @@ transformed parameters {
         if (time[i] == 1) {
             z[i, j] <- e_all[i, j];
         } else {//Current visit depends on previous visit
-            z[i, j] <- (y_mat[i - n_unit, j]) * mu_phi[i-n_unit,j] + //persistence
-            		       (1 - y_mat[i - n_unit, j]) * mu_gam[i-n_unit,j] + //colonization
+            z[i, j] <- (y_mat[i - n_unit, j]) * mu_phi[i-n_unit, j] + //persistence
+            		       (1 - y_mat[i - n_unit, j]) * mu_gam[i-n_unit, j] + //colonization
             		       e_all[i, j]; //correlated and nested ranef
         }
       }
@@ -78,8 +92,8 @@ model {
 
   for(j in 1:m){
     for(i in 1:m){
+      beta_gam_raw[i,j] ~ double_exponential(0,1);
       beta_phi[i,j] ~ double_exponential(0,1);
-      beta_gam[i,j] ~ double_exponential(0,1);
     }
   }
   

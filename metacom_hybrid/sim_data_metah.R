@@ -18,7 +18,7 @@ AntiLogit <- function(x){
 
 # define parameters -------------------------------------
 m <- 2                   # species
-n_timesteps <- 21          # visits/repeat observations
+n_timesteps <- 11          # visits/repeat observations
 n_site <- 100               # locations/patients
 n <- n_timesteps * n_site # number of observations
 time <- rep(1:n_timesteps, each = n_site)
@@ -82,8 +82,12 @@ X_gam <- matrix(1, nrow = n, ncol = k_gam)
 #beta_gam <- matrix(rnorm(m * k_gam), nrow = k_gam)
 beta_gam <- matrix(rep(0,m*k_phi), nrow=k_phi)
 
+
 # species-specific fixed effects on gam (used below)
+# Doesn't make sense to have a intra-specific effect on colonization 
+# (because the species wasn't there in t-1), so these vals = 0
 beta_gam_intxn <- matrix(rdoublex(m ^ 2, 0, 1), nrow = m)
+diag(beta_gam_intxn) <- 0
 
 mu_gam <- X_gam %*% beta_gam
 
