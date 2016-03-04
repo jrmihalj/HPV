@@ -66,7 +66,7 @@ transformed parameters{
     	}
     }
     
-  z_phi <- 0 + e_all_phi; // ignore fixed effects for now 
+  	z_phi <- 0 + e_all_phi; // ignore fixed effects for now 
 	z_gam <- 0 + e_all_gam; // ignore fixed effects for now 
 	}
 	
@@ -105,7 +105,9 @@ model {
   to_vector(psi0) ~ normal(0, 3);
   
   for(k in 1:n_strains){
-    z[, k] ~ bernoulli(bern_phi[, k]);
+  	for (j in 1:n_obs){
+    	z[j, k] ~ bernoulli(bern_phi[j, k]);
+    }
   }
   
 } // end model block
