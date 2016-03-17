@@ -3,29 +3,14 @@ library(rstan)
 library(ggplot2)
 library(reshape)
 library(RSQLite)
-dbResultsFilename <- "results_hybrid.sqlite"
+source("plotting_functions.R")
+dbResultsFilename <- "results_hybrid_test.sqlite"
 db <- dbConnect(SQLite(), dbResultsFilename)
 tables <- dbListTables(db)
 cor_time <- dbReadTable(db, tables[[1]])
 cor_patient <- dbReadTable(db, tables[[2]])
 summary <- dbReadTable(db,tables[[5]])
-dbDisconnect(db)
-
-# Function to make traceplot ############################################
-make_traceplot <- function(results, param ,iter,nChains){
-  test <- results[,names(results) == param]
-  cut_point <- iter/2
-  df <- data.frame(
-    matrix(test, ncol = nChains)
-  )
-  chain_names <- paste0("chain_",c(1:nChains))
-  names(df) <- chain_names
-  df$iter = c(1:nrow(df))
-  dfm <- melt(df, id.vars = "iter")
-  title <- paste("traceplot ", param, sep = "")
-  traceplot <- ggplot(dfm, aes(x=iter, y = value, color = variable)) + geom_line()+ ggtitle(title) + theme_bw()
-  return(traceplot)
-}   
+dbDisconnect(db) 
 
 ### read in fixed params ###########
 m <- 2                   # species
@@ -34,6 +19,7 @@ n_site <- c(20,40,60,80,100,150,200,300,400,500)
 version_corr <- c(1,2,3)
 
 sweep_df <- data.frame( n_time = rep(n_timesteps, each = length(n_site)), n_s = rep(n_site, each = length(version_corr)), version = rep(version_corr, times = length(n_timesteps)*length(n_site)))
+sweep_df <- sweep_df[sweep_df$version == 1,]
 sweep_df$trial <- 1:nrow(sweep_df)
 
 Rp_filename <- paste0("Rp_",1,".csv" )
@@ -56,6 +42,8 @@ cor_time_3 <- cor_t_total[cor_t_total$trial %in% sweep_df_3$trial,]
 
 
 ###### Summary ##############################
+names <- unique(summary$row_names)[1:8]
+summary <- summary[summary$row_names %in% names,]
 trials <- unique(summary$trial)
 sum <- summary[!is.na(summary$Rhat),]
 trials_NC <- unique(sum[sum$Rhat>1.1,]$trial)
@@ -66,6 +54,19 @@ trials_C <- trials[!(trials %in% trials_NC)]
 #######
 cor_patient <- cor_patient_1
 cor_time <- cor_time_1
+
+
+## Make traceplots 
+trials <- unique(cor_patient$trial)
+for( i in 1:length(trials)){
+  cat("i is ", i)
+  df_sub <- cor_patient[cor_patient$trial == trials[i],]
+  t <- make_traceplot(df_sub, "X2.1" ,2000,4)
+  t <- t + ggtitle(paste0("Rp n_pat = ", sweep_df[sweep_df$trial == trials[i],]$n_s, ", n_vis = ", sweep_df[sweep_df$trial == trials[i],]$n_time))
+  assign(paste0("t_",trials[i]), t)
+}
+
+
 trials <- trials_C
 res_df <- data.frame()
 for( i in 1:length(trials)){
