@@ -8,8 +8,24 @@ db <- dbConnect(SQLite(), dbResultsFilename)
 tables <- dbListTables(db)
 cor_time <- dbReadTable(db, tables[[1]])
 cor_patient <- dbReadTable(db, tables[[2]])
+summary <- dbReadTable(db,tables[[5]])
 dbDisconnect(db)
 
+# Function to make traceplot ############################################
+make_traceplot <- function(results, param ,iter,nChains){
+  test <- results[,names(results) == param]
+  cut_point <- iter/2
+  df <- data.frame(
+    matrix(test, ncol = nChains)
+  )
+  chain_names <- paste0("chain_",c(1:nChains))
+  names(df) <- chain_names
+  df$iter = c(1:nrow(df))
+  dfm <- melt(df, id.vars = "iter")
+  title <- paste("traceplot ", param, sep = "")
+  traceplot <- ggplot(dfm, aes(x=iter, y = value, color = variable)) + geom_line()+ ggtitle(title) + theme_bw()
+  return(traceplot)
+}   
 
 ### read in fixed params ###########
 m <- 2                   # species
@@ -20,8 +36,8 @@ version_corr <- c(1,2,3)
 sweep_df <- data.frame( n_time = rep(n_timesteps, each = length(n_site)), n_s = rep(n_site, each = length(version_corr)), version = rep(version_corr, times = length(n_timesteps)*length(n_site)))
 sweep_df$trial <- 1:nrow(sweep_df)
 
-Rp_filename <- paste0("Rp_",3,".csv" )
-Ro_filename <- paste0("Ro_",3,".csv" )
+Rp_filename <- paste0("Rp_",1,".csv" )
+Ro_filename <- paste0("Ro_",1,".csv" )
 
 Rp = as.matrix(read.csv(Rp_filename))[,-1]
 Ro = as.matrix(read.csv(Ro_filename))[,-1]
@@ -37,10 +53,20 @@ cor_time_2 <- cor_t_total[cor_t_total$trial %in% sweep_df_2$trial,]
 sweep_df_3 <- sweep_df[sweep_df$version == 3,]
 cor_patient_3 <- cor_p_total[cor_p_total$trial %in% sweep_df_3$trial,]
 cor_time_3 <- cor_t_total[cor_t_total$trial %in% sweep_df_3$trial,]
+
+
+###### Summary ##############################
+trials <- unique(summary$trial)
+sum <- summary[!is.na(summary$Rhat),]
+trials_NC <- unique(sum[sum$Rhat>1.1,]$trial)
+trials_C <- trials[!(trials %in% trials_NC)]
+
+
+
 #######
-cor_patient <- cor_patient_3
-cor_time <- cor_time_3
-trials <- unique(cor_time$trial)
+cor_patient <- cor_patient_1
+cor_time <- cor_time_1
+trials <- trials_C
 res_df <- data.frame()
 for( i in 1:length(trials)){
   #cor_p <- cor_patient[cor_patient$trial == trials[i],]
