@@ -31,31 +31,38 @@ LH_calc <- function(betas, fix.beta=F, fix.rho=T){
                             eta=2)$Sigma
     
     # observation-level ranefs
-    ep <- matrix(nrow = n_site, ncol = m)
+    ep_temp <- matrix(nrow = n_site, ncol = m)
     for (i in 1:n_site){
-      ep[i, ] <- rnorm(m) %*% t(chol(Rp_temp))
+      ep_temp[i, ] <- rnorm(m) %*% t(chol(Rp_temp))
     }
     
     # observation-level corr matrix
-    Ro_temp <- genPositiveDefMat(dim=m, #Number of columns/Ro_tempws
-                            covMethod = 'onion', 
-                            rangeVar = c(1, 1), # Range of variances
-                            eta=2)$Sigma
+    # Ro_temp <- genPositiveDefMat(dim=m, #Number of columns/rows
+    #                         covMethod = 'onion', 
+    #                         rangeVar = c(1, 1), # Range of variances
+    #                         eta=2)$Sigma
+    
+    Ro_temp <- matrix(c(1,0,0,1), ncol=m, byrow=T)
     
     # observation-level ranefs
-    eo <- matrix(nrow = n, ncol = m)
+    eo_temp <- matrix(nrow = n, ncol = m)
     for (i in 1:n){
-      eo[i, ] <- rnorm(m) %*% t(chol(Ro_temp))
+      eo_temp[i, ] <- rnorm(m) %*% t(chol(Ro_temp))
     }
     
     # Add the ranef
-    e_all <- matrix(nrow = n, ncol = m)
+    e_all_temp <- matrix(nrow = n, ncol = m)
     for(i in 1:n){
-      e_all[i, ] <- ep[site[i], ] + eo[i, ]
+      e_all_temp[i, ] <- ep_temp[site[i], ] + eo_temp[i, ]
     }
     
     # Normalize
-    e_all <- (e_all - mean(e_all)) / sd(e_all)
+    e_all_temp <- (e_all_temp - mean(e_all_temp)) / sd(e_all_temp)
+    
+  }else{
+    
+    e_all_temp <- e_all
+    
   }
 
   ##############
@@ -66,7 +73,7 @@ LH_calc <- function(betas, fix.beta=F, fix.rho=T){
   y_temp <- matrix(NA, nrow=n, ncol=m)
   
   # first observation:
-  z_temp[time==1, ] =  qlogis(pnorm(e_all[time==1, ])) #only based on correlations
+  z_temp[time==1, ] =  qlogis(pnorm(e_all_temp[time==1, ])) #only based on correlations
   y_temp[time == 1, ] <- ifelse(z_tot[time == 1, ] > 0, 1, 0)
   
   # subsequent observations:
@@ -76,7 +83,7 @@ LH_calc <- function(betas, fix.beta=F, fix.rho=T){
       #Colonization:
       (1 - y_temp[time == i - 1, ]) * (y_temp[time == i - 1, ] %*% bg_temp) +
       #Correlated and nested random effects:
-      qlogis(pnorm(e_all[time==i, ]))
+      qlogis(pnorm(e_all_temp[time==i, ]))
     
     y_temp[time == i, ] <- ifelse(z_temp[time == i, ] > 0, 1, 0)
   }
@@ -86,7 +93,7 @@ LH_calc <- function(betas, fix.beta=F, fix.rho=T){
   prob_temp <- pnorm(z_temp)
   LH_all <-  dbinom(y, 1, prob=prob_temp, log=TRUE)
   #Fix Inf/-Inf values (e.g. y=1, prob=0)
-  LH_all <- ifelse(is.infinite(LH_all)==T, -20, LH_all) # Inf means very low probability
+  LH_all <- ifelse(is.infinite(LH_all)==T, -10, LH_all) # Inf means very low probability
   LH <- sum(LH_all)
   
   if(fix.rho==F){
@@ -140,6 +147,8 @@ while(sweep <= n.sweeps){
 library(readr)
 library(dplyr)
 library(ggplot2)
+library(grid)
+library(gridExtra)
 
 # Read in the data now
 LHdf <- read_csv(file="LHSurfaceBeta.csv", col_names=T)
@@ -159,16 +168,11 @@ param_names <- c("bp11", "bp12", "bp21", "bp22", "bg12", "bg21")
 for(i in these){
   for(j in these){
     if( (i == j) | (i > j)){
-      p <- NULL
-      p <- ggplot(LHdf)+
-                                scale_y_continuous(breaks=c(lower,0,upper))+
-                                scale_x_continuous(breaks=c(lower,0,upper))+
-                                theme_classic()+
-                                geom_blank()
+    
+      p <- nullGrob()
+
       if(i==j){ 
-        p <- p + 
-          annotate("text", x=0,y=0, label=param_names[i-1])+
-          theme(line=element_blank(), text=element_blank())
+        p <- textGrob(param_names[i-1])
       }
       
       all_plots[[counter]] <- p
@@ -176,14 +180,14 @@ for(i in these){
       
     } else {
       all_plots[[counter]] <- ggplot(LHdf)+
-                                aes_string(x=colnames(LHdf)[i], y=colnames(LHdf)[j])+
+                                aes_string(x=colnames(LHdf)[j], y=colnames(LHdf)[i])+
                                 theme_classic()+
                                 geom_point(aes(color=LogLH), size=.2, alpha=.5)+
                                 labs(x="",y="", title="")+
                                 scale_y_continuous(limits=c(lower,upper), breaks=c(lower,0,upper))+
                                 scale_x_continuous(limits=c(lower,upper), breaks=c(lower,0,upper))+
                                 scale_color_gradient("LHood", low="blue", high="yellow")+
-                                annotate("point", x=true_b[i-1], y=true_b[j-1], color="red")+
+                                annotate("point", x=true_b[j-1], y=true_b[i-1], color="red")+
                                 guides(color=F)
       counter <- counter + 1
     }
@@ -191,7 +195,6 @@ for(i in these){
 }
 
 # Plot on one page
-library(gridExtra)
 quartz(height=10,width=10)
 plot_it <- arrangeGrob(grobs=all_plots, ncol=6)
 grid.arrange(plot_it)
@@ -200,11 +203,12 @@ grid.arrange(plot_it)
 #################################################################
 #################################################################
 #################################################################
+
+# Now look at the Rho's 
+
 library(readr)
 library(dplyr)
 library(ggplot2)
-
-# Now look at the Rho's 
 
 n.samples <- 2000
 cat("LH,Rp,Ro\n", file="LHSurfaceRho.csv", sep="")
@@ -222,22 +226,24 @@ quartz(height=5, width=8)
 par(mfrow=c(1,2),
     mai=c(0.5,0.5,0,0),
     omi=c(0,.25,0,0))
-plot(LH_Rho$LH ~ LH_Rho$Rp, axes="F", ylim=c(-13000,-9500))
+plot(LH_Rho$LH ~ LH_Rho$Rp, axes="F", ylim=c((min(LH_Rho$LH)-20), (max(LH_Rho$LH)-20)))
 axis(1, at=c(-1, 0, 1), mgp=c(3,.4,0))
-axis(2, at=c(-13000,-11500,-10000), mgp=c(3,.4,0))
+axis(2, at=c(round((min(LH_Rho$LH)-20)), round(max(LH_Rho$LH)-20)), mgp=c(3,.4,0))
+par(xpd=F)
 abline(v=Rp[1,2], col="red", lwd=1.2)
 mtext("Rp",1,outer=F,line=1.2)
 
-par(mai=c(0.5,0,0,0.2))
-plot(LH_Rho$LH ~ LH_Rho$Ro, axes="F", ylim=c(-13000,-9500))
+par(mai=c(0.5,0,0,0.2), xpd=T)
+plot(LH_Rho$LH ~ LH_Rho$Ro, axes="F", ylim=c((min(LH_Rho$LH)-20), (max(LH_Rho$LH)-20)))
 axis(1, at=c(-1, 0, 1), mgp=c(3,.4,0))
+par(xpd=F)
 abline(v=Ro[1,2], col="red", lwd=1.2)
 mtext("Ro",1,outer=F,line=1.2)
 mtext("Likelihood", side=2, outer=T, line=0)
 
 quartz(height=5, width=5)
 ggplot(LH_Rho, aes(Ro, Rp))+
-  geom_point(aes(color=LH), size=.75)+
+  geom_point(aes(color=LH), size=1)+
   theme_classic()+
   scale_y_continuous(limits=c(-1,1), breaks=c(-1,0,1))+
   scale_x_continuous(limits=c(-1,1), breaks=c(-1,0,1))+
