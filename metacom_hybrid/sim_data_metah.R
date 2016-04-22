@@ -18,8 +18,8 @@ AntiLogit <- function(x){
 
 # define parameters -------------------------------------
 m <- 2                   # species
-n_timesteps <- 11          # visits/repeat observations
-n_site <- 100               # locations/patients
+n_timesteps <- 20          # visits/repeat observations
+n_site <- 200               # locations/patients
 n <- n_timesteps * n_site # number of observations
 time <- rep(1:n_timesteps, each = n_site)
 site <- rep(1:n_site, n_timesteps)
@@ -30,6 +30,8 @@ Rp <- genPositiveDefMat(dim=m, #Number of columns/rows
                         rangeVar = c(1, 1), # Range of variances
                         eta=2)$Sigma
 
+#Rp <- matrix(c(1,0,0,1), ncol=m, byrow=T)
+
 # observation-level ranefs
 ep <- matrix(nrow = n_site, ncol = m)
 for (i in 1:n_site){
@@ -37,10 +39,12 @@ for (i in 1:n_site){
 }
 
 # observation-level corr matrix
-Ro <- genPositiveDefMat(dim=m, #Number of columns/rows
-                        covMethod = 'onion', 
-                        rangeVar = c(1, 1), # Range of variances
-                        eta=2)$Sigma
+# Ro <- genPositiveDefMat(dim=m, #Number of columns/rows
+#                         covMethod = 'onion', 
+#                         rangeVar = c(1, 1), # Range of variances
+#                         eta=2)$Sigma
+
+Ro <- matrix(c(1,0,0,1), ncol=m, byrow=T)
 
 # observation-level ranefs
 eo <- matrix(nrow = n, ncol = m)
@@ -68,8 +72,8 @@ X_phi <- matrix(1, nrow = n, ncol = k_phi)
 beta_phi <- matrix(rep(0,m*k_phi), nrow=k_phi)
 
 # species-specific fixed effects on phi (used below)
-beta_phi_intxn <- matrix(rdoublex(m ^ 2, 0, 1), nrow = m)
-
+#beta_phi_intxn <- matrix(rdoublex(m ^ 2, 0, 1), nrow = m)
+beta_phi_intxn <- matrix(rep(0,m^2), ncol=m)
 mu_phi <- X_phi %*% beta_phi
 
 #########
@@ -86,7 +90,8 @@ beta_gam <- matrix(rep(0,m*k_phi), nrow=k_phi)
 # species-specific fixed effects on gam (used below)
 # Doesn't make sense to have a intra-specific effect on colonization 
 # (because the species wasn't there in t-1), so these vals = 0
-beta_gam_intxn <- matrix(rdoublex(m ^ 2, 0, 1), nrow = m)
+#beta_gam_intxn <- matrix(rdoublex(m ^ 2, 0, 1), nrow = m)
+beta_gam_intxn <- matrix(rep(0,m^2), ncol=m)
 diag(beta_gam_intxn) <- 0
 
 mu_gam <- X_gam %*% beta_gam
