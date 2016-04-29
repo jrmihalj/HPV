@@ -32,14 +32,43 @@ tableNames <- dbListTables(db)
 inf_status <- dbReadTable(db,"infectionStatusByVisit")
 dbDisconnect(db)
 inf_status_complete <- inf_status[!is.na(inf_status$status),]
+# who has all ten visits
+visitIds <- unique(inf_status_complete$visitId)
+strainIds <- unique(inf_status_complete$strainId)
+
+n_vis = length(visitIds)
+n_strains =  length(strainIds)
+
+# get people with data from all visits 
+n_obs_per_pat <- table(inf_status_complete$subjectId)
+complete_obs_pat <- as.numeric(names(n_obs[which(n_obs == n.strains * n.vis)]))
+inf_status_complete <- inf_status_complete[inf_status_complete$subjectId %in% complete_obs_pat,]
+
+strainIds <- unique(inf_status_complete$strainId)
+subjectIds <- unique(inf_status_complete$subjectId)
 strainIds <- unique(inf_status_complete$strainId)
 subjectIds <- unique(inf_status_complete$subjectId)
 n_pat <- 200
 test_pat <- sample(subjectIds, size = n_pat, replace = FALSE)
+## choose two HPV types to test method
 test_strains <- as.list(strainIds[c(1,3)])
 
 ## TODO: set this up with lapply and merge data frame results
+#df_list <- lapply(c(1:length(test_strains)),get_data_for_strain)
 df1 <- get_data_for_strain(1)
 df2 <- get_data_for_strain(2)
+df_all <- merge(df1,df2, by = c("site","time"))
+df_all <- df_all[order( df_all$time),]
+
+stan_d <- list(n_unit = n_pat,
+               n_time = n_vis,
+               n = n_pat * n_vis,
+               m = length(test_strains),
+               unit = rep(c(1:n_pat), times = n_vis),
+               time = df_all$time,
+               y = as.matrix(df_all[,3:ncol(df_all)]),
+               y_mat = as.matrix(df_all[,3:ncol(df_all)])
+               )
+save(stan_d, file = "test_data_HIM.rda")
 
 
