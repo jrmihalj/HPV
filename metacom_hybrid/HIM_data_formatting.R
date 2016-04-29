@@ -41,7 +41,7 @@ n_strains =  length(strainIds)
 
 # get people with data from all visits 
 n_obs_per_pat <- table(inf_status_complete$subjectId)
-complete_obs_pat <- as.numeric(names(n_obs[which(n_obs == n.strains * n.vis)]))
+complete_obs_pat <- as.numeric(names(n_obs_per_pat[which(n_obs_per_pat == n_strains * n_vis)]))
 inf_status_complete <- inf_status_complete[inf_status_complete$subjectId %in% complete_obs_pat,]
 
 strainIds <- unique(inf_status_complete$strainId)
