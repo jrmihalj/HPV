@@ -1,6 +1,6 @@
 # generating data from a multivariate probit model
 library(clusterGeneration)
-d <- 2 # number of dimensions (strains)
+d <- 4 # number of dimensions (strains)
 
 n_visits <- 30
 n_patients <- 10
@@ -33,6 +33,7 @@ for (i in 1:nrep) {
 
   eps1 <- array(rnorm(n * d), dim = c(n, d)) %*% L_1
   eps2 <- array(rnorm(n_patients * d), dim = c(n_patients, d)) %*% L_2
+  patient <- rep(1:n_patients, times = n_visits)
 
   y_star <- eps1 + eps2[patient, ]
 
