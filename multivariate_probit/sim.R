@@ -1,13 +1,13 @@
 # generating data from a multivariate probit model
 library(clusterGeneration)
-d <- 4 # number of dimensions (strains)
+d <- 3 # number of dimensions (strains)
 
-n_visits <- 30
-n_patients <- 10
+n_visits <- 15
+n_patients <- 100
 n <- n_patients * n_visits
 patient <- rep(1:n_patients, times = n_visits)
 
-nrep <- 10000
+nrep <- 1000
 vars <- array(dim = c(d, d, nrep))
 
 for (i in 1:nrep) {
@@ -15,21 +15,23 @@ for (i in 1:nrep) {
   # and they need to sum to one. Each row in `variance` corresponds to a strain
   # and each column is a ranef level
   variance <- array(dim = c(d, 2))
-  variance[, 1] <- runif(d)
-  variance[, 2] <- 1 - variance[, 1]
+  variance[, 2] <- runif(d, .1, .9)
+  variance[, 1] <- 1 - variance[, 2]
   stopifnot(all(apply(variance, 1, sum) == 1))
 
   # construct correlation matrices
-  Rho1 <- genPositiveDefMat(d, covMethod = 'onion', eta = 2, rangeVar = c(1, 1))$Sigma
-  Rho2 <- genPositiveDefMat(d, covMethod = 'onion', eta = 2, rangeVar = c(1, 1))$Sigma
+  Rho_patient <- genPositiveDefMat(d, covMethod = 'onion',
+                                   eta = 2, rangeVar = c(1, 1))$Sigma
+  Rho_visit <- genPositiveDefMat(d, covMethod = 'onion',
+                                 eta = 2, rangeVar = c(1, 1))$Sigma
 
   # construct covariance matrices
   sdev <- sqrt(variance)
-  Sigma1 <- diag(sdev[, 1]) %*% Rho1 %*% diag(sdev[, 1])
-  Sigma2 <- diag(sdev[, 2]) %*% Rho2 %*% diag(sdev[, 2])
+  Sigma_patient <- diag(sdev[, 1]) %*% Rho_patient %*% diag(sdev[, 1])
+  Sigma_visit <- diag(sdev[, 2]) %*% Rho_visit %*% diag(sdev[, 2])
 
-  L_1 <- chol(Sigma1)
-  L_2 <- chol(Sigma2)
+  L_1 <- chol(Sigma_visit)
+  L_2 <- chol(Sigma_patient)
 
   eps1 <- array(rnorm(n * d), dim = c(n, d)) %*% L_1
   eps2 <- array(rnorm(n_patients * d), dim = c(n_patients, d)) %*% L_2
