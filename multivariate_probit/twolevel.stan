@@ -1,10 +1,10 @@
 data {
   int n;
   int d;
-  matrix[n,d] y;
+  row_vector<lower = 0, upper = 1>[d] y[n];
   real<lower = 1> eta;
   int n_patient;
-  int<lower = 0, upper = n_patient> patient[n];
+  int<lower = 1, upper = n_patient> patient[n];
   vector[2] dir_prior;
   int n_visit;
   int<lower = 1, upper = n_visit> visit[n];
@@ -12,10 +12,16 @@ data {
 }
 
 transformed data {
-  matrix[n, d] sign;
+
+  row_vector[d] sign[n];
+  row_vector[d] zero_vec;
   
-  for (i in 1:n) {
-    for (j in 1:d) {
+  for (i in 1:d) {
+    zero_vec[i] <- 0;
+  }
+
+  for (j in 1:d) {
+    for (i in 1:n) {
       if (y[i, j] == 1) {
         sign[i, j] <- 1;
       } else {
@@ -23,39 +29,56 @@ transformed data {
       }
     }
   }
+
 }
 
 parameters {
   cholesky_factor_corr[d] L_Rho_patient;
   cholesky_factor_corr[d] L_Rho_visit;
-  matrix<lower = 0, upper=9>[n, d] abs_ystar;
-  matrix[n_patient, d] e_patientR;
+  row_vector<lower=0>[d] abs_ystar[n];
+  row_vector[d] e_patient[n_patient];
   simplex[2] var_mat[d];
   matrix[d,d] betas;
   //real<lower = 1, upper=5> eta;
-  //vector<lower=0>[d] y_star_means;
   //real<lower=0.0001> sd_beta;
 }
 
 transformed parameters {
   cholesky_factor_cov[d] L_Sigma_visit;
-  matrix[n_patient, d] e_patient;
+  cholesky_factor_cov[d] L_Sigma_patient;
+  matrix[n_patient, d] e_patient2;
   vector<lower = 0>[d] sd_visit;
   vector<lower = 0>[d] sd_patient;
   matrix[n, d] fixedef_R;
   matrix[n, d] fixedef;
+  matrix[n, d] mu_all;
+  row_vector[d] occur[n];
 
+    
   for (i in 1:d) {
     sd_visit[i] <- sqrt(var_mat[i, 1]);
     sd_patient[i] <- sqrt(var_mat[i, 2]);
   }
-  e_patient <- (diag_pre_multiply(sd_patient, L_Rho_patient) * e_patientR')';
+  
+  //For efficiency, instead of this:
+  //e_patient <- (diag_pre_multiply(sd_patient, L_Rho_patient) * e_patientR')';
+  //Do below, and then have e_patient be distributed as a multi_normal_cholesky with zero mean
+  L_Sigma_patient <- diag_pre_multiply(sd_patient, L_Rho_patient);
   L_Sigma_visit <- diag_pre_multiply(sd_visit, L_Rho_visit);
   
-  fixedef_R <- y * betas;
-  
   for (i in 1:n) {
-    for (j in 1:d) {
+    fixedef_R[i,] <- y[i,] * betas;
+  }
+  
+  //This is simply converting e_patient into a matrix for vectorization below
+  for (j in 1:d) {
+    for (i in 1:n_patient) {
+      e_patient2[i, j] <- e_patient[i, j];
+    }
+  }
+  
+  for (j in 1:d) {
+    for (i in 1:n) {
       if (visit[i] == 1){
         fixedef[i, j] <- 0;
       } else {
@@ -63,6 +86,15 @@ transformed parameters {
       }
     }
   }
+  
+  //For efficiency:
+  mu_all <- fixedef + e_patient2[patient, ];
+  
+  //For efficiency:
+  for (i in 1:n) {
+    occur[i, ] <- sign[i, ] .* abs_ystar[i, ];
+  }
+
   
 }
 
@@ -73,39 +105,21 @@ model {
   
   //sd_beta ~ cauchy(0,3);
   //eta ~ normal(0,100);
-  //y_star_means ~ normal(0,10);
   
   L_Rho_patient ~ lkj_corr_cholesky(eta);
   L_Rho_visit ~ lkj_corr_cholesky(eta);
-  to_vector(e_patientR) ~ normal(0, 1);
-  to_vector(betas) ~ normal(0, 5);
-  //Might make sense to make this heirarchical
-  //i.e. each strain has an average abs_star
-  //to_vector(abs_ystar) ~ normal(0, 2);
-  // for (i in 1:d){
-  //   abs_ystar[,d] ~ normal(y_star_means[d], 2);
-  // }
+  //to_vector(e_patientR) ~ normal(0, 1);
+  to_vector(betas) ~ normal(0, 3);
   
-  {
-    
-    matrix[n, d] occur;
-    matrix[n, d] mu_all;
-    
-    //For efficiency:
-    mu_all <- fixedef + e_patient[patient, ];
-  
-    //For efficiency:
-    for (i in 1:n) {
-      occur[i, ] <- sign[i, ] .* abs_ystar[i, ];
-    }
-  
-    for (i in 1:n) {
-      occur[i, ] ~ multi_normal_cholesky(mu_all[i, ], L_Sigma_visit);
-    }
-    
+  for (i in 1:n_patient){
+    //random patient-level effects:
+    e_patient[i, ] ~ multi_normal_cholesky(zero_vec, L_Sigma_patient);
   }
-  
-  
+
+  for (i in 1:n) {
+    occur[i, ] ~ multi_normal_cholesky(mu_all[i, ], L_Sigma_visit);
+  }
+
   
 }
 
