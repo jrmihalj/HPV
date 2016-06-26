@@ -5,13 +5,30 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
 
-stan_d <- list(n = n, d = d, y = y, eta = 2,
+stan_d <- list(n = n, d = d, 
+               y = y,
+               eta = 2,
                patient = patient, n_patient = n_patients,
                n_visit = n_visits, visit = visit,
                dir_prior = c(1, 1))
 
-m_fit <- stan('multivariate_probit/twolevel.stan',
-              data = stan_d, chains = 2, iter = 1000, #warmup = 1000,
+inits_f <- function(){
+  list(betas = array(rnorm(d*d,0,3), dim=c(d,d)),
+       e_patient = array(rnorm(n_patients*d,0,1), dim=c(n_patients, d)),
+       abs_ystar = array(abs(rnorm(n*d,0,2)), dim=c(n,d))
+       )
+}
+
+test <- stan('multivariate_probit/twolevel.stan',
+              data = stan_d, chains = 1, iter = 10,
+              init = inits_f,
+              pars = c('Rho_patient', 'Rho_visit',
+                       'sd_visit', 'sd_patient', 'var_mat',
+                       'betas'))
+
+m_fit <- stan(fit = test,
+              data = stan_d,
+              chains = 2, iter = 1500, #warmup = 500,
               pars = c('Rho_patient', 'Rho_visit',
                        'sd_visit', 'sd_patient', 'var_mat',
                        'betas'))
