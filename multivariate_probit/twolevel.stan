@@ -36,9 +36,12 @@ parameters {
   cholesky_factor_corr[d] L_Rho_patient;
   cholesky_factor_corr[d] L_Rho_visit;
   row_vector<lower=0>[d] abs_ystar[n];
-  row_vector[d] e_patient[n_patient];
+  matrix[n_patient,d] e_patient;
   simplex[2] var_mat[d];
-  matrix[d,d] betas;
+  matrix[d,d] betas_phi;
+  matrix[d,d] betas_gam_R;
+  //matrix[d,d] betas_gam;
+
   //real<lower = 1, upper=5> eta;
   //real<lower=0.0001> sd_beta;
 }
@@ -46,11 +49,12 @@ parameters {
 transformed parameters {
   cholesky_factor_cov[d] L_Sigma_visit;
   cholesky_factor_cov[d] L_Sigma_patient;
-  matrix[n_patient, d] e_patient2;
   vector<lower = 0>[d] sd_visit;
   vector<lower = 0>[d] sd_patient;
-  matrix[n, d] fixedef_R;
+  matrix[n, d] fixedef_phi;
+  matrix[n, d] fixedef_gam;
   matrix[n, d] fixedef;
+  matrix[d,d] betas_gam;
   matrix[n, d] mu_all;
   row_vector[d] occur[n];
 
@@ -66,29 +70,40 @@ transformed parameters {
   L_Sigma_patient <- diag_pre_multiply(sd_patient, L_Rho_patient);
   L_Sigma_visit <- diag_pre_multiply(sd_visit, L_Rho_visit);
   
-  for (i in 1:n) {
-    fixedef_R[i,] <- y[i,] * betas;
+  for(j in 1:d){
+    for(i in 1:d){
+      if(i == j){
+        betas_gam[i,j] <- 0;
+      }else{
+        betas_gam[i,j] <- betas_gam_R[i, j];
+      }
+    }
   }
   
-  //This is simply converting e_patient into a matrix for vectorization below
-  for (j in 1:d) {
-    for (i in 1:n_patient) {
-      e_patient2[i, j] <- e_patient[i, j];
-    }
+  for (i in 1:n) {
+    fixedef_phi[i,] <- y[i,] * betas_phi;
+    fixedef_gam[i,] <- y[i,] * betas_gam;
   }
   
   for (j in 1:d) {
     for (i in 1:n) {
+      
       if (visit[i] == 1){
         fixedef[i, j] <- 0;
       } else {
-        fixedef[i, j] <- fixedef_R[i - n_patient, j];
+        
+        if( y[i - n_patient, j] == 1){
+          fixedef[i, j] <- fixedef_phi[i - n_patient, j];
+        }else{
+          fixedef[i, j] <- fixedef_gam[i - n_patient, j];
+        }
+        
       }
     }
   }
   
   //For efficiency:
-  mu_all <- fixedef + e_patient2[patient, ];
+  mu_all <- fixedef + e_patient[patient, ];
   
   //For efficiency:
   for (i in 1:n) {
@@ -109,7 +124,10 @@ model {
   L_Rho_patient ~ lkj_corr_cholesky(eta);
   L_Rho_visit ~ lkj_corr_cholesky(eta);
   //to_vector(e_patientR) ~ normal(0, 1);
-  to_vector(betas) ~ normal(0, 3);
+  to_vector(betas_phi) ~ normal(0, 3);
+  to_vector(betas_gam_R) ~ normal(0, 3);
+  //to_vector(betas_gam) ~ normal(0, 3);
+
   
   for (i in 1:n_patient){
     //random patient-level effects:

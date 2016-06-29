@@ -13,7 +13,8 @@ stan_d <- list(n = n, d = d,
                dir_prior = c(1, 1))
 
 inits_f <- function(){
-  list(betas = array(rnorm(d*d,0,3), dim=c(d,d)),
+  list(betas_phi = array(rnorm(d*d,0,3), dim=c(d,d)),
+       betas_gam = array(rnorm(d*d,0,3), dim=c(d,d)),
        e_patient = array(rnorm(n_patients*d,0,1), dim=c(n_patients, d)),
        abs_ystar = array(abs(rnorm(n*d,0,2)), dim=c(n,d))
        )
@@ -24,14 +25,15 @@ test <- stan('multivariate_probit/twolevel.stan',
               init = inits_f,
               pars = c('Rho_patient', 'Rho_visit',
                        'sd_visit', 'sd_patient', 'var_mat',
-                       'betas'))
+                       'betas_phi', 'betas_gam'))
 
 m_fit <- stan(fit = test,
               data = stan_d,
-              chains = 2, iter = 1500, #warmup = 500,
+              init = inits_f,
+              chains = 2, iter = 1000, #warmup = 500,
               pars = c('Rho_patient', 'Rho_visit',
                        'sd_visit', 'sd_patient', 'var_mat',
-                       'betas'))
+                       'betas_phi', 'betas_gam'))
 
 # check convergence:
 summary(m_fit)$summary[,"Rhat"]
@@ -46,7 +48,9 @@ traceplot(m_fit, pars = 'Rho_patient') +
 traceplot(m_fit, pars = 'Rho_visit') +
   ylim(-1, 1)
 
-traceplot(m_fit, pars = 'betas')
+traceplot(m_fit, pars = 'betas_phi')
+traceplot(m_fit, pars = 'betas_gam')
+
 
 # extract posterior draws
 post <- extract(m_fit)
@@ -66,6 +70,7 @@ for (i in 1:d) {
 }
 
 # check recovery of visit-level correlations
+par(mfrow=c(d,d))
 for (i in 1:d) {
   for (j in 1:d) {
     if (i == j) {
@@ -87,12 +92,21 @@ for (i in 1:2) {
   }
 }
 
-# check recovery of betas:
+# check recovery of betas_phi:
 par(mfrow=c(d,d))
 for (i in 1:d) {
   for (j in 1:d) {
-    hist(post$betas[, i, j], main="", xlab=paste("beta [", i, "," , j, "]"))
-    abline(v = betas[i, j], col = 2, lwd = 2)
+    hist(post$betas_phi[, i, j], main="", xlab=paste("beta_phi [", i, "," , j, "]"), xlim = range(betas_phi) + c(-1,1))
+    abline(v = betas_phi[i, j], col = 2, lwd = 2)
+  }
+}
+
+# check recovery of betas_gam:
+par(mfrow=c(d,d))
+for (i in 1:d) {
+  for (j in 1:d) {
+    hist(post$betas_gam[, i, j], main="", xlab=paste("beta_gam [", i, "," , j, "]"), xlim = range(betas_phi) + c(-1,1))
+    abline(v = betas_gam[i, j], col = 2, lwd = 2)
   }
 }
 
