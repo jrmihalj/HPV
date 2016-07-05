@@ -40,8 +40,7 @@ parameters {
   simplex[2] var_mat[d];
   matrix[d,d] betas_phi;
   matrix[d,d] betas_gam_R;
-  //matrix[d,d] betas_gam;
-
+  real<lower=0,upper=1> base_prob[d];
   //real<lower = 1, upper=5> eta;
   //real<lower=0.0001> sd_beta;
 }
@@ -55,6 +54,7 @@ transformed parameters {
   matrix[n, d] fixedef_gam;
   matrix[n, d] fixedef;
   matrix[d,d] betas_gam;
+  vector[d] alphas;
   matrix[n, d] mu_all;
   row_vector[d] occur[n];
 
@@ -80,6 +80,10 @@ transformed parameters {
     }
   }
   
+  for (i in 1:d){
+    alphas[i] <- inv_Phi(base_prob[i]);
+  }
+  
   for (i in 1:n) {
     fixedef_phi[i,] <- y[i,] * betas_phi;
     fixedef_gam[i,] <- y[i,] * betas_gam;
@@ -93,9 +97,9 @@ transformed parameters {
       } else {
         
         if( y[i - n_patient, j] == 1){
-          fixedef[i, j] <- fixedef_phi[i - n_patient, j];
+          fixedef[i, j] <- alphas[j] + fixedef_phi[i - n_patient, j];
         }else{
-          fixedef[i, j] <- fixedef_gam[i - n_patient, j];
+          fixedef[i, j] <- alphas[j] + fixedef_gam[i - n_patient, j];
         }
         
       }
@@ -126,9 +130,9 @@ model {
   //to_vector(e_patientR) ~ normal(0, 1);
   to_vector(betas_phi) ~ normal(0, 3);
   to_vector(betas_gam_R) ~ normal(0, 3);
-  //to_vector(betas_gam) ~ normal(0, 3);
+  base_prob ~ uniform(0,1);
+  //alphas ~ normal(0,3);
 
-  
   for (i in 1:n_patient){
     //random patient-level effects:
     e_patient[i, ] ~ multi_normal_cholesky(zero_vec, L_Sigma_patient);

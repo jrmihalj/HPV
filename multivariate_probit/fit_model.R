@@ -13,27 +13,29 @@ stan_d <- list(n = n, d = d,
                dir_prior = c(1, 1))
 
 inits_f <- function(){
-  list(betas_phi = array(rnorm(d*d,0,3), dim=c(d,d)),
-       betas_gam = array(rnorm(d*d,0,3), dim=c(d,d)),
+  list(betas_phi = array(rnorm(d*d,0,1), dim=c(d,d)),
+       betas_gam = array(rnorm(d*d,0,1), dim=c(d,d)),
+       #alphas = rnorm(d, 0, 2),
        e_patient = array(rnorm(n_patients*d,0,1), dim=c(n_patients, d)),
        abs_ystar = array(abs(rnorm(n*d,0,2)), dim=c(n,d))
        )
 }
 
+params <- c('Rho_patient', 'Rho_visit',
+            'sd_visit', 'sd_patient', 'var_mat',
+            'betas_phi', 'betas_gam', 'alphas')
+
 test <- stan('multivariate_probit/twolevel.stan',
               data = stan_d, chains = 1, iter = 10,
               init = inits_f,
-              pars = c('Rho_patient', 'Rho_visit',
-                       'sd_visit', 'sd_patient', 'var_mat',
-                       'betas_phi', 'betas_gam'))
+              pars = params)
 
 m_fit <- stan(fit = test,
               data = stan_d,
               init = inits_f,
-              chains = 2, iter = 1000, #warmup = 500,
-              pars = c('Rho_patient', 'Rho_visit',
-                       'sd_visit', 'sd_patient', 'var_mat',
-                       'betas_phi', 'betas_gam'))
+              chains = 3, iter = 3000, warmup = 1500, thin=3,
+              pars = params,
+              control=list(max_treedepth=13))
 
 # check convergence:
 summary(m_fit)$summary[,"Rhat"]
@@ -50,7 +52,7 @@ traceplot(m_fit, pars = 'Rho_visit') +
 
 traceplot(m_fit, pars = 'betas_phi')
 traceplot(m_fit, pars = 'betas_gam')
-
+traceplot(m_fit, pars = 'alphas')
 
 # extract posterior draws
 post <- extract(m_fit)
@@ -105,8 +107,16 @@ for (i in 1:d) {
 par(mfrow=c(d,d))
 for (i in 1:d) {
   for (j in 1:d) {
-    hist(post$betas_gam[, i, j], main="", xlab=paste("beta_gam [", i, "," , j, "]"), xlim = range(betas_phi) + c(-1,1))
+    hist(post$betas_gam[, i, j], main="", xlab=paste("beta_gam [", i, "," , j, "]"), xlim = range(betas_gam) + c(-1,1))
     abline(v = betas_gam[i, j], col = 2, lwd = 2)
   }
 }
 
+# check recovery of betas_gam:
+par(mfrow=c(1,d))
+for (i in 1:d) {
+  
+  hist(post$alphas[, i], main="", xlab=paste("alphas [", i, "]"), xlim = range(alphas) + c(-1,1))
+  abline(v = alphas[i], col = 2, lwd = 2)
+  
+}
