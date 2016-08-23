@@ -82,7 +82,6 @@ transformed parameters {
 
   for (j in 1:d) {
     for (i in 1:n) {
-    print("visit =", visit[i], " patient =", patient[i]);
       if (visit[i] == 1){
         fixedef[i, j] = alphas[j];
       } 
@@ -114,6 +113,7 @@ model {
     e_patient[i, ] ~ multi_normal_cholesky(zero_vec, L_Sigma_patient);
   }
   for (i in 1:n_complete_obs) {
+  	print("i is:", i, "ind is ", complete_obs[i], " sign is ", sign[i,1]);
     sign[i, ] .* abs_ystar[i, ] ~ multi_normal_cholesky(mu_all[complete_obs[i], ], L_Sigma_visit);
   }
 }
