@@ -4,7 +4,7 @@
 ###-------------------------------------------------------------------------------------------------------------------------------------------
 library(reshape)
 library(RSQLite)
-
+use_complete_data = TRUE
 ## FUNCTIONS ################## ----------------------------------------------------------
 ## stupid function to convert visit dates to numeric times ###
 get_timestep <- function(t){
@@ -12,10 +12,10 @@ get_timestep <- function(t){
 }
 
 ## function to get infection data for one strain 
-get_data_for_strain <- function(i, strain_list = test_strains){
+get_data_for_strain <- function(i, inf = inf_status, strain_list = test_strains){
   this_strain = strain_list[[i]]
   cat("strain is", this_strain, "\n")
-  data <- inf_status_complete[inf_status_complete$strainId == this_strain & inf_status_complete$subjectId %in% test_pat,]
+  data <- inf[inf$strainId == this_strain & inf$subjectId %in% test_pat,]
   data$time <- sapply(data$visitId, get_timestep)
   data <- data[order(data$time),]
   site <- as.numeric(data$subjectId)
@@ -37,13 +37,16 @@ dbDisconnect(db)
 vis_dates <- reshape(visit_dates, idvar = "subjectId",  timevar = "visitId", direction = "wide")
 vis_dates2 <- apply(vis_dates[,2:11],2, as.Date, origin = '1970-1-1')
 vis_dates3 <- apply(vis_dates2,2, as.numeric)
-complete_data_indices <- which(!is.na(rowSums(vis_dates3)))
-complete_data_ids <- vis_dates$subjectId[complete_data_indices]
-inf_status_complete_visits <- subset(inf_status, subjectId %in% complete_data_ids)
-missing_data_indices_2 <- which(is.na(inf_status_complete_visits$status))
-problem_patients <- unique(inf_status_complete_visits[missing_data_indices_2,]$subjectId)
-inf_status_complete <- subset(inf_status_complete_visits, !(subjectId %in% problem_patients))
 
+if(use_complete_data){
+  complete_data_indices <- which(!is.na(rowSums(vis_dates3)))
+  complete_data_ids <- vis_dates$subjectId[complete_data_indices]
+  inf_status_complete_visits <- subset(inf_status, subjectId %in% complete_data_ids)
+  missing_data_indices_2 <- which(is.na(inf_status_complete_visits$status))
+  problem_patients <- unique(inf_status_complete_visits[missing_data_indices_2,]$subjectId)
+  inf_status_complete <- subset(inf_status_complete_visits, !(subjectId %in% problem_patients))
+  inf_status <- inf_status_complete
+}
 
 visitIds <- unique(inf_status$visitId)
 strainIds <- unique(inf_status$strainId)
@@ -55,35 +58,50 @@ n_strains =  length(strainIds)
 #complete_obs_pat <- as.numeric(names(n_obs_per_pat[which(n_obs_per_pat == n_strains * n_vis)]))
 #inf_status_complete <- inf_status_complete[inf_status_complete$subjectId %in% complete_obs_pat,]
 
-strainIds <- unique(inf_status_complete$strainId)
-subjectIds <- unique(inf_status_complete$subjectId)
-strainIds <- unique(inf_status_complete$strainId)
-subjectIds <- unique(inf_status_complete$subjectId)
+strainIds <- unique(inf_status$strainId)
+subjectIds <- unique(inf_status$subjectId)
+
 n_pat <- 200
 test_pat <- sample(subjectIds, size = n_pat, replace = FALSE)
 ## choose two HPV types to test method
-test_strains <- as.list(strainIds[c(1,3)])
+n_test_strains <- 3
+test_strains <- as.list(strainIds[c(1:n_test_strains)])
 
 ## TODO: set this up with lapply and merge data frame results
 #df_list <- lapply(c(1:length(test_strains)),get_data_for_strain)
 df1 <- get_data_for_strain(1)
 df2 <- get_data_for_strain(2)
 df_all <- merge(df1,df2, by = c("site","time"))
+if(n_test_strains > 2){
+  for( i in 3:n_test_strains)
+  df <- get_data_for_strain(i)
+  df_all <- merge(df_all, df, by = c("site","time"))
+}
+
 df_all <- df_all[order( df_all$time),]
 names(df_all) <- c("patient", "visit", test_strains)
 
-
+# ind <- which(is.na(df_all$hpv6))
+# missing <- df_all[ind,]
+# pat_missing <- unique(df_all[ind,]$patient)
+# test_pats <- c(23057, 11704)
+# df_all <- df_all[df_all$patient %in% test_pats,]
 ## Format data for stan code 
 n_visits <- length(visitIds)
 n_patients <- n_pat
 n <- n_patients * n_visits
-y = as.matrix(df_all[,-c(1:2)])
+y = as.matrix(df_all[,names(df_all) %in% test_strains])
 patient <- rep(c(1:n_patients), times = n_visits)
 visit <- df_all$visit
 d <- ncol(y)
+if(!use_complete_data){
+  missing <- which(is.na(y[,1]))
+  visit[missing] <- -1
+}
 
 subjectIds <- data.frame(subjectId = df_all$patient,
                            patient_num = patient)
+
 
 stan_d <- list(n = n, 
                d = d, 
@@ -95,6 +113,6 @@ stan_d <- list(n = n,
                visit = visit,
                dir_prior = c(1, 1))
 
-save(stan_d, subjectIds, file = "test_data_HIM.rda")
+save(stan_d, subjectIds, file = "test_data_missing_HIM.rda")
 
 
