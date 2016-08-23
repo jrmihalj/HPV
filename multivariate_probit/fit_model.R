@@ -1,23 +1,42 @@
-source('multivariate_probit/sim.R')
 
 library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
+simulate_data = FALSE 
 
+if(simulate_data){
+  source('sim.R')
+  stan_d <- list(n = n, 
+                 d = d, 
+                 y = y,
+                 eta = 2,
+                 patient = patient, n_patient = n_patients,
+                 n_visit = n_visits, visit = visit,
+                 dir_prior = c(1, 1))
+}
 
-stan_d <- list(n = n, d = d, 
-               y = y,
-               eta = 2,
-               patient = patient, n_patient = n_patients,
-               n_visit = n_visits, visit = visit,
-               dir_prior = c(1, 1))
+if(!simulate_data){
+  load("test_data_missing_HIM.rda")
+  # find missing visits
+  missing <- which(is.na(rowSums(stan_d$y)))
+  # find number and indices of complete observations 
+  n_complete_obs <- stan_d$n - length(missing)
+  stan_d$n_complete_obs <- n_complete_obs
+  complete_obs <- which(stan_d$visit != -1)
+  stan_d$complete_obs <- complete_obs
+  # stan doesn't accept "NA" so set missing 0/1 observations to be .5 
+  # (these will not be counted in the model but they need a placeholder)
+  y = stan_d$y
+  y[is.na(y)] <- .5
+  stan_d$y = y
+}
 
 inits_f <- function(){
   list(betas_phi = array(rnorm(d*d,0,1), dim=c(d,d)),
        betas_gam = array(rnorm(d*d,0,1), dim=c(d,d)),
        #alphas = rnorm(d, 0, 2),
        e_patient = array(rnorm(n_patients*d,0,1), dim=c(n_patients, d)),
-       abs_ystar = array(abs(rnorm(n*d,0,2)), dim=c(n,d))
+       abs_ystar = array(abs(rnorm(n_complete_obs*d,0,2)), dim=c(n_complete_obs,d))
        )
 }
 
@@ -25,8 +44,8 @@ params <- c('Rho_patient', 'Rho_visit',
             'sd_visit', 'sd_patient', 'var_mat',
             'betas_phi', 'betas_gam', 'alphas')
 
-test <- stan('multivariate_probit/twolevel.stan',
-              data = stan_d, chains = 1, iter = 10,
+test <- stan('twolevel_variable_visits.stan',
+              data = stan_d, chains = 1, iter = 2,
               init = inits_f,
               pars = params)
 
