@@ -5,13 +5,14 @@ options(mc.cores = parallel::detectCores())
 simulate_data = FALSE 
 
 if(simulate_data){
-  source('sim.R')
+  source('sim_variable_visits.R')
   stan_d <- list(n = n, 
                  d = d, 
                  y = y,
+                 tbv = tbv,
                  eta = 2,
                  patient = patient, n_patient = n_patients,
-                 n_visit = n_visits, visit = visit,
+                 n_visit_max = n_visit_max, visit = visit,
                  dir_prior = c(1, 1))
 }
 
@@ -34,17 +35,20 @@ if(!simulate_data){
 inits_f <- function(){
   list(betas_phi = array(rnorm(d*d,0,1), dim=c(d,d)),
        betas_gam = array(rnorm(d*d,0,1), dim=c(d,d)),
-       #alphas = rnorm(d, 0, 2),
+       betas_tbv_phi = rnorm(d, 0, 1),
+       betas_tbv_gam = rnorm(d, 0, 1),
+       alphas = rnorm(d, -2, 1),
        e_patient = array(rnorm(n_patients*d,0,1), dim=c(n_patients, d)),
-       abs_ystar = array(abs(rnorm(n_complete_obs*d,0,2)), dim=c(n_complete_obs,d))
+       abs_ystar = array(abs(rnorm(n*d,0,2)), dim=c(n,d))
        )
 }
 
 params <- c('Rho_patient', 'Rho_visit',
             'sd_visit', 'sd_patient', 'var_mat',
-            'betas_phi', 'betas_gam', 'alphas')
+            'betas_phi', 'betas_gam', 
+            'betas_tbv_phi', 'betas_tbv_gam', 'alphas')
 
-test <- stan('twolevel_variable_visits.stan',
+test <- stan('./multivariate_probit/twolevel.stan',
               data = stan_d, chains = 1, iter = 2,
               init = inits_f,
               pars = params)
@@ -52,7 +56,7 @@ test <- stan('twolevel_variable_visits.stan',
 m_fit <- stan(fit = test,
               data = stan_d,
               init = inits_f,
-              chains = 3, iter = 3000, warmup = 1500, thin=3,
+              chains = 3, iter = 2000, warmup = 1000, #thin=3,
               pars = params,
               control=list(max_treedepth=13))
 
@@ -71,6 +75,8 @@ traceplot(m_fit, pars = 'Rho_visit') +
 
 traceplot(m_fit, pars = 'betas_phi')
 traceplot(m_fit, pars = 'betas_gam')
+traceplot(m_fit, pars = 'betas_tbv_phi')
+traceplot(m_fit, pars = 'betas_tbv_gam')
 traceplot(m_fit, pars = 'alphas')
 
 # extract posterior draws
@@ -131,11 +137,19 @@ for (i in 1:d) {
   }
 }
 
-# check recovery of betas_gam:
+# check recovery of betas_tbv_phi and betas_tbv_gam:
+par(mfrow=c(d, 2))
+for(i in 1:d){
+  hist(post$betas_tbv_phi[, i], main="", xlab=paste("beta_tbv_phi [", i, "]"), xlim = range(betas_tbv_phi) + c(-1,1))
+  abline(v = betas_tbv_phi[i], col = 2, lwd = 2)
+  hist(post$betas_tbv_gam[, i], main="", xlab=paste("beta_tbv_gam [", i, "]"), xlim = range(betas_tbv_gam) + c(-1,1))
+  abline(v = betas_tbv_gam[i], col = 2, lwd = 2)
+}
+
+
+# check recovery of alphas:
 par(mfrow=c(1,d))
 for (i in 1:d) {
-  
   hist(post$alphas[, i], main="", xlab=paste("alphas [", i, "]"), xlim = range(alphas) + c(-1,1))
   abline(v = alphas[i], col = 2, lwd = 2)
-  
 }

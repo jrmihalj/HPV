@@ -1,12 +1,17 @@
 # generating data from a multivariate probit model
 library(clusterGeneration)
 
-d <- 3 # number of dimensions (strains)
-n_visits <- 10
-n_patients <- 150
-n <- n_patients * n_visits
-patient <- rep(1:n_patients, times = n_visits)
-visit <- rep(1:n_visits, each=n_patients)
+d <- 2 # number of dimensions (strains)
+n_patients <- 250
+n_visits_patient <- ceiling(-abs(rnorm(n_patients,0,2.5))) + 10 # most have all 10, but some less
+n <- sum(n_visits_patient)
+patient <- rep(1:n_patients, times=n_visits_patient)
+visit <- NULL
+for(i in 1:n_patients){
+  temp <- c(1:n_visits_patient[i])
+  visit <- c(visit, temp)
+}
+n_visit_max <- 10
 
 # Calculate random effect variances, and make sure they sum to 1
 variance <- array(dim = c(d, 2))
@@ -69,16 +74,16 @@ for(i in 1:n){
     
     y_star[i, ] <- randefs[i, ]
     mu_all[i, ] <- 0
-
+    
   }else{
     for(j in 1:d){
       
-      if(y[i - n_patients, j] == 1){
-        mu_all[i,j] <- (y[i - n_patients, ] %*% betas_phi)[j] + tbv[i,j] * betas_tbv_phi[j]
-      }else{
-        mu_all[i,j] <- (y[i - n_patients, ] %*% betas_gam)[j] + tbv[i,j] * betas_tbv_gam[j]
+      if(y[i - 1, j] == 1){ # If the previous observation for strain j in patient i was PRESENT, then persistence:
+        mu_all[i,j] <- (y[i - 1, ] %*% betas_phi)[j] + tbv[i,j] * betas_tbv_phi[j]
+      }else{ # If the previous observation for strain j in patient i was ABSENT, then colonization:
+        mu_all[i,j] <- (y[i - 1, ] %*% betas_gam)[j] + tbv[i,j] * betas_tbv_gam[j]
       }
-
+      
     }
     
     y_star[i, ] <- alphas + mu_all[i, ] + randefs[i, ]
@@ -92,4 +97,16 @@ for(i in 1:n){
 # check overall prevalences
 colSums(y) / nrow(y)
 
-
+# # check correlations
+# library(tidyverse)
+# hist(y_star)
+# df_test <- data.frame(y_star, patient, visit)
+# 
+# sub <- df_test %>%
+#   filter(patient %in% sample(1:n_patients, size=10)) %>%
+#   ggplot(aes(x=X2, y=X3))+
+#   geom_point(shape=19, aes(color=factor(patient))) +
+#   facet_wrap(~patient, nrow=2)
+# print(sub)
+# 
+# cor(df_test[,1:2])

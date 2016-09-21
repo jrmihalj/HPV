@@ -2,12 +2,13 @@ data {
   int n;
   int d;
   row_vector<lower = 0, upper = 1>[d] y[n];
-  real<lower = 1> eta;
   int n_patient;
+  int n_visit_max;
   int<lower = 1, upper = n_patient> patient[n];
+  int<lower = 1, upper = n_visit_max> visit[n];
+  row_vector[d] tbv[n];
   vector[2] dir_prior;
-  int n_visit;
-  int<lower = 1, upper = n_visit> visit[n];
+  real<lower = 1> eta;
 }
 
 transformed data {
@@ -34,6 +35,8 @@ parameters {
   simplex[2] var_mat[d];
   matrix[d, d] betas_phi;
   matrix[d, d] betas_gam_R;
+  vector[d] betas_tbv_phi;
+  vector[d] betas_tbv_gam;
   vector[d] alphas;
 }
 
@@ -76,10 +79,10 @@ transformed parameters {
       if (visit[i] == 1){
         fixedef[i, j] = alphas[j];
       } else {
-        if( y[i - n_patient, j] == 1){
-          fixedef[i, j] = alphas[j] + fixedef_phi[i - n_patient, j];
+        if( y[i - 1, j] == 1){
+          fixedef[i, j] = alphas[j] + fixedef_phi[i - 1, j] + tbv[i,j] * betas_tbv_phi[j];
         } else {
-          fixedef[i, j] = alphas[j] + fixedef_gam[i - n_patient, j];
+          fixedef[i, j] = alphas[j] + fixedef_gam[i - 1, j] + tbv[i,j] * betas_tbv_gam[j];
         }
       }
     }
@@ -89,13 +92,19 @@ transformed parameters {
 }
 
 model {
-  for (i in 1:d) var_mat[i] ~ dirichlet(dir_prior);
+  for (i in 1:d) {
+    var_mat[i] ~ dirichlet(dir_prior);
+    abs_ystar[i] ~ normal(0, 1);
+  }
+  
   L_Rho_patient ~ lkj_corr_cholesky(eta);
   L_Rho_visit ~ lkj_corr_cholesky(eta);
   to_vector(betas_phi) ~ normal(0, 1);
   to_vector(betas_gam_R) ~ normal(0, 1);
+  betas_tbv_phi ~ normal(0, 1);
+  betas_tbv_gam ~ normal(0, 1);
   alphas ~ normal(-2, 1.5);
-
+  
   for (i in 1:n_patient){
     e_patient[i, ] ~ multi_normal_cholesky(zero_vec, L_Sigma_patient);
   }
