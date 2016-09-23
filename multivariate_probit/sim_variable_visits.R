@@ -1,30 +1,46 @@
 # generating data from a multivariate probit model
+# with a varying number of visits among patients
 library(clusterGeneration)
 
-d <- 2 # number of dimensions (strains)
+
+## high level data parameters --------------------------------------------------
+n_strains <- 2
 n_patients <- 250
-n_visits_patient <- ceiling(-abs(rnorm(n_patients,0,2.5))) + 10 # most have all 10, but some less
-n <- sum(n_visits_patient)
-patient <- rep(1:n_patients, times=n_visits_patient)
-visit <- NULL
-for(i in 1:n_patients){
-  temp <- c(1:n_visits_patient[i])
-  visit <- c(visit, temp)
-}
 n_visit_max <- 10
 
-# Calculate random effect variances, and make sure they sum to 1
-variance <- array(dim = c(d, 2))
-variance[, 2] <- runif(d, .1, .9)
+
+# generate the number of visits per patient, which is between 1 and 10
+n_visits_patient <- rbinom(n_patients, n_visit_max, prob = .8)
+if (min(n_visits_patient) == 0) {
+  zeros <- n_visits_patient == 0
+  n_visits_patient[zeros] <- 1
+}
+n <- sum(n_visits_patient)
+
+
+# generate indices for patients and visits
+patient <- rep(1:n_patients, times = n_visits_patient)
+visit <- NULL
+for (i in 1:n_patients) {
+  visit <- c(visit, 1:n_visits_patient[i])
+}
+stopifnot(length(patient) == length(visit))
+stopifnot(length(patient) == n)
+
+
+## Generate parameter values -------------------------------------------------
+# random effect variances (must sum to 1 bc. probit!)
+variance <- array(dim = c(n_strains, 2))
+variance[, 2] <- runif(n_strains, .1, .9)
 variance[, 1] <- 1 - variance[, 2]
 
-# construct correlation matrices
-Rho_patient <- genPositiveDefMat(d, covMethod = 'onion',
+# correlation matrices
+Rho_patient <- genPositiveDefMat(n_strains, covMethod = 'onion',
                                  eta = 2, rangeVar = c(1, 1))$Sigma
-Rho_visit <- genPositiveDefMat(d, covMethod = 'onion',
+Rho_visit <- genPositiveDefMat(n_strains, covMethod = 'onion',
                                eta = 2, rangeVar = c(1, 1))$Sigma
 
-# construct covariance matrices
+# covariance matrices
 sdev <- sqrt(variance)
 Sigma_patient <- diag(sdev[, 1]) %*% Rho_patient %*% diag(sdev[, 1])
 Sigma_visit <- diag(sdev[, 2]) %*% Rho_visit %*% diag(sdev[, 2])
@@ -33,69 +49,65 @@ L_1 <- chol(Sigma_visit)
 L_2 <- chol(Sigma_patient)
 
 # draw random effect values
-eps1 <- array(rnorm(n * d), dim = c(n, d)) %*% L_1
-eps2 <- array(rnorm(n_patients * d), dim = c(n_patients, d)) %*% L_2
+eps1 <- array(rnorm(n * n_strains), dim = c(n, n_strains)) %*% L_1
+eps2 <- array(rnorm(n_patients * n_strains), dim = c(n_patients, n_strains)) %*% L_2
 
-# add up the nested random effects:
-randefs <- eps1 + eps2[patient, ] 
+# add up the nested random effects by matching patients to observations
+randefs <- eps1 + eps2[patient, ]
 
-# create a fixed effect of previous co-habitating species' occurrences:
-betas_phi <- array(rnorm(d*d, 0, 1), dim=c(d,d))
-betas_gam <- array(rnorm(d*d, 0, 1), dim=c(d,d))
-diag(betas_gam) <- 0
+# create a fixed effect of previous co-habitating strain occurrences:
+betas_phi <- matrix(rnorm(n_strains**2, 0, 1), nrow = n_strains) # persistence
+betas_gam <- matrix(rnorm(n_strains**2, 0, 1), nrow = n_strains) # colonization
+diag(betas_gam) <- 0 # 
 
 # create a fixed effect of the time between visits (tbv) in units of days
 # This covariate is strain specific, and can affect either phi or gamma
-betas_tbv_phi <- rnorm(d, 0, 0.5)
-betas_tbv_gam <- rnorm(d, 0, 0.5)
+betas_tbv_phi <- rnorm(n_strains, 0, 0.5)
+betas_tbv_gam <- rnorm(n_strains, 0, 0.5)
 
 # generate the tbv covariate values
 # I'll assume most at 14 days, some up to ~30
-tbv <- floor(abs(rnorm(n * d, 0, 5))) + 14
+tbv <- floor(abs(rnorm(n * n_strains, 0, 5))) + 14
 # center, scale, and put into a matrix
-tbv <- matrix(scale(tbv), nrow=n, ncol=d)
+tbv <- matrix(scale(tbv), nrow = n, ncol = n_strains)
 #tbv <- (tbv)^(4/7)
 #hist(tbv)
 
 # create species-specific intercepts for y_star
 # assume these are low, because that is reflected in our data
-alphas <- rnorm(d, -2, 1)   # transformed to unit normal scale, for the probit
+alphas <- rnorm(n_strains, -2, 1)   # transformed to unit normal scale, for the probit
 
-# estimate latent variable, y*, and the observed occurrence, y:
-y_star <- array(0, dim=c(n,d))
-y <- array(0, dim=c(n,d))
 
-# create the fixed effects
-mu_all <- array(0, dim=c(n,d))
 
-for(i in 1:n){
-  
-  if(visit[i] == 1){# For the initial visit, use only random effects
-    
-    y_star[i, ] <- randefs[i, ]
+
+## Generate observation histories ----------------------------------------------
+y_star <- array(dim = c(n, n_strains)) # latent (continuous)
+y <- array(dim = c(n, n_strains)) # observed (0 or 1)
+
+# fixed effects array
+mu_all <- array(dim = c(n, n_strains))
+
+for (i in 1:n) {
+  if (visit[i] == 1) {# For the initial visit, use random effects + intercept
+    y_star[i, ] <- randefs[i, ] + alphas
     mu_all[i, ] <- 0
-    
-  }else{
-    for(j in 1:d){
-      
-      if(y[i - 1, j] == 1){ # If the previous observation for strain j in patient i was PRESENT, then persistence:
-        mu_all[i,j] <- (y[i - 1, ] %*% betas_phi)[j] + tbv[i,j] * betas_tbv_phi[j]
-      }else{ # If the previous observation for strain j in patient i was ABSENT, then colonization:
-        mu_all[i,j] <- (y[i - 1, ] %*% betas_gam)[j] + tbv[i,j] * betas_tbv_gam[j]
+  } else {
+    for (j in 1:n_strains) {
+      if (y[i - 1, j] == 1) { # strain j in patient i was present: persistence
+        mu_all[i,j] <- (y[i - 1, ] %*% betas_phi)[j] + 
+          tbv[i, j] * betas_tbv_phi[j]
+      } else {# strain j in patient i was absent: colonization
+        mu_all[i,j] <- (y[i - 1, ] %*% betas_gam)[j] + 
+          tbv[i, j] * betas_tbv_gam[j]
       }
-      
     }
-    
     y_star[i, ] <- alphas + mu_all[i, ] + randefs[i, ]
-    
   }
-  
   y[i, ] <- ifelse(y_star[i, ] > 0, 1, 0)
-  
 }
 
 # check overall prevalences
-colSums(y) / nrow(y)
+apply(y, 2, mean)
 
 # # check correlations
 # library(tidyverse)
