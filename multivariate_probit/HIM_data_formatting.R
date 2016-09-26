@@ -33,10 +33,10 @@ inf_status <- dbReadTable(db,"infectionStatusByVisit")
 visit_dates <- dbReadTable(db,"visitDates")
 dbDisconnect(db)
 
-
 vis_dates <- reshape(visit_dates, idvar = "subjectId",  timevar = "visitId", direction = "wide")
 vis_dates2 <- apply(vis_dates[,2:11],2, as.Date, origin = '1970-1-1')
-vis_dates3 <- apply(vis_dates2,2, as.numeric)
+vis_dates3 <- as.data.frame(apply(vis_dates2,2, as.numeric))
+vis_dates3$subjectId <- vis_dates$subjectId
 
 if(use_complete_data){
   complete_data_indices <- which(!is.na(rowSums(vis_dates3)))
@@ -46,54 +46,62 @@ if(use_complete_data){
   problem_patients <- unique(inf_status_complete_visits[missing_data_indices_2,]$subjectId)
   inf_status_complete <- subset(inf_status_complete_visits, !(subjectId %in% problem_patients))
   inf_status <- inf_status_complete
+  vis_dates3 <- subset(vis_dates3, subjectId %in% inf_status$subjectId)
 }
 
-visitIds <- unique(inf_status$visitId)
-strainIds <- unique(inf_status$strainId)
-n_vis = length(visitIds)
-n_strains =  length(strainIds)
 
-# get people with data from all visits 
-#n_obs_per_pat <- table(inf_status_complete$subjectId)
-#complete_obs_pat <- as.numeric(names(n_obs_per_pat[which(n_obs_per_pat == n_strains * n_vis)]))
-#inf_status_complete <- inf_status_complete[inf_status_complete$subjectId %in% complete_obs_pat,]
+## Construct matrix of time between visits # -----------
+tbv <- matrix(NA, n_pat, n_vis)
+tbv[,1] <- array(0, nrow(tbv))
+for( i in 2:n_vis){
+  tbv[,i] <- vis_dates3[,i] - vis_dates3[,(i-1)]
+}
 
+tbv_df <- data.frame(subjectId = vis_dates3$subjectId,
+                     tbv)
+names(tbv_df) <- c("subjectId",paste0("v",c(1:n_vis)))
+
+##  Specify strains/patients for analysis ------------------------------------------------------
 strainIds <- unique(inf_status$strainId)
 subjectIds <- unique(inf_status$subjectId)
+strainIds <- unique(inf_status$strainId)
+n_strains =  length(strainIds)
+n_pat <- length(subjectIds)
+visitIds <- unique(inf_status$visitId)
+n_vis = length(visitIds)
 
-n_pat <- 200
 test_pat <- sample(subjectIds, size = n_pat, replace = FALSE)
-## choose two HPV types to test method
-n_test_strains <- 3
-test_strains <- as.list(strainIds[c(1:n_test_strains)])
+test_strains <- paste0("hpv",c(6,11,16,18)) #,31,33,45,52,58,84))
+n_test_strains <- length(test_strains)
 
-## TODO: set this up with lapply and merge data frame results
-#df_list <- lapply(c(1:length(test_strains)),get_data_for_strain)
+
+## Get the data and format it # ------------------------------------------------------------
 df1 <- get_data_for_strain(1)
 df2 <- get_data_for_strain(2)
 df_all <- merge(df1,df2, by = c("site","time"))
 if(n_test_strains > 2){
-  for( i in 3:n_test_strains)
-  df <- get_data_for_strain(i)
-  df_all <- merge(df_all, df, by = c("site","time"))
+  for( i in 3:n_test_strains){
+    df <- get_data_for_strain(i)
+    df_all <- merge(df_all, df, by = c("site","time"))
+  }
 }
 
 df_all <- df_all[order( df_all$time),]
 names(df_all) <- c("patient", "visit", test_strains)
 
-# ind <- which(is.na(df_all$hpv6))
-# missing <- df_all[ind,]
-# pat_missing <- unique(df_all[ind,]$patient)
-# test_pats <- c(23057, 11704)
-# df_all <- df_all[df_all$patient %in% test_pats,]
-## Format data for stan code 
+# get the correct set of time between visit data according to test patients --------------
+tbv <- melt(subset(tbv_df, subjectId %in% df_all$patient), id.vars = "subjectId")
+
+## Format all data into stan code input --------------------------------------------------
 n_visits <- length(visitIds)
 n_patients <- n_pat
 n <- n_patients * n_visits
 y = as.matrix(df_all[,names(df_all) %in% test_strains])
 patient <- rep(c(1:n_patients), times = n_visits)
 visit <- df_all$visit
+time_between_visits <- tbv$value
 d <- ncol(y)
+
 if(!use_complete_data){
   missing <- which(is.na(y[,1]))
   visit[missing] <- -1
@@ -101,7 +109,6 @@ if(!use_complete_data){
 
 subjectIds <- data.frame(subjectId = df_all$patient,
                            patient_num = patient)
-
 
 stan_d <- list(n = n, 
                d = d, 
@@ -111,8 +118,9 @@ stan_d <- list(n = n,
                n_patient = n_patients,
                n_visit = n_visits, 
                visit = visit,
+               tbv = time_between_visits,
                dir_prior = c(1, 1))
 
-save(stan_d, subjectIds, file = "test_data_missing_HIM.rda")
+save(stan_d, subjectIds, file = "test_data_HIM_full.rda")
 
-
+## NOT including 139,55,64###
