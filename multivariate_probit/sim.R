@@ -46,9 +46,9 @@ betas_tbv_gam <- rnorm(d, 0, 0.5)
 
 # generate the tbv covariate values
 # I'll assume most at 14 days, some up to ~30
-tbv <- floor(abs(rnorm(n * d, 0, 5))) + 14
+tbv <- floor(abs(rnorm(n, 0, 5))) + 14
 # center, scale, and put into a matrix
-tbv <- matrix(scale(tbv), nrow=n, ncol=d)
+tbv <- matrix(rep(scale(tbv),d), nrow=n, ncol=d)
 #tbv <- (tbv)^(4/7)
 #hist(tbv)
 

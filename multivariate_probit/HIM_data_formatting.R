@@ -17,7 +17,7 @@ get_data_for_strain <- function(i, inf = inf_status, strain_list = test_strains)
   cat("strain is", this_strain, "\n")
   data <- inf[inf$strainId == this_strain & inf$subjectId %in% test_pat,]
   data$time <- sapply(data$visitId, get_timestep)
-  data <- data[order(data$time),]
+  data <- data[order(data$subjectId),]
   site <- as.numeric(data$subjectId)
   time <- as.numeric(data$time)
   y <- as.numeric(data$status)
@@ -49,9 +49,21 @@ if(use_complete_data){
   vis_dates3 <- subset(vis_dates3, subjectId %in% inf_status$subjectId)
 }
 
+##  Specify strains/patients for analysis ------------------------------------------------------
+strainIds <- unique(inf_status$strainId)
+subjectIds <- unique(inf_status$subjectId)
+strainIds <- unique(inf_status$strainId)
+n_strains =  length(strainIds)
+n_pat <- 100 #length(subjectIds)
+visitIds <- unique(inf_status$visitId)
+n_vis = length(visitIds)
+
+test_pat <- sample(subjectIds, size = n_pat, replace = FALSE)
+test_strains <- paste0("hpv",c(6,11,16,18)) #,31,33,45,52,58,84))
+n_test_strains <- length(test_strains)
 
 ## Construct matrix of time between visits # -----------
-tbv <- matrix(NA, n_pat, n_vis)
+tbv <- matrix(NA, nrow(vis_dates3), n_vis)
 tbv[,1] <- array(0, nrow(tbv))
 for( i in 2:n_vis){
   tbv[,i] <- vis_dates3[,i] - vis_dates3[,(i-1)]
@@ -60,19 +72,6 @@ for( i in 2:n_vis){
 tbv_df <- data.frame(subjectId = vis_dates3$subjectId,
                      tbv)
 names(tbv_df) <- c("subjectId",paste0("v",c(1:n_vis)))
-
-##  Specify strains/patients for analysis ------------------------------------------------------
-strainIds <- unique(inf_status$strainId)
-subjectIds <- unique(inf_status$subjectId)
-strainIds <- unique(inf_status$strainId)
-n_strains =  length(strainIds)
-n_pat <- length(subjectIds)
-visitIds <- unique(inf_status$visitId)
-n_vis = length(visitIds)
-
-test_pat <- sample(subjectIds, size = n_pat, replace = FALSE)
-test_strains <- paste0("hpv",c(6,11,16,18)) #,31,33,45,52,58,84))
-n_test_strains <- length(test_strains)
 
 
 ## Get the data and format it # ------------------------------------------------------------
@@ -86,7 +85,7 @@ if(n_test_strains > 2){
   }
 }
 
-df_all <- df_all[order( df_all$time),]
+df_all <- df_all[order( df_all$site, df_all$time),]
 names(df_all) <- c("patient", "visit", test_strains)
 
 # get the correct set of time between visit data according to test patients --------------
