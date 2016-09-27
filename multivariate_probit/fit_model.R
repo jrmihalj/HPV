@@ -5,9 +5,9 @@ options(mc.cores = parallel::detectCores())
 simulate_data = FALSE 
 
 if(simulate_data){
-  source('sim_variable_visits.R')
+  source('sim.R')
   stan_d <- list(n = n, 
-                 d = d, 
+                 n_strains = n_strains, 
                  y = y,
                  tbv = tbv,
                  eta = 2,
@@ -33,13 +33,13 @@ if(!simulate_data){
 }
 
 inits_f <- function(){
-  list(betas_phi = array(rnorm(d*d,0,1), dim=c(d,d)),
-       betas_gam = array(rnorm(d*d,0,1), dim=c(d,d)),
-       betas_tbv_phi = rnorm(d, 0, 1),
-       betas_tbv_gam = rnorm(d, 0, 1),
-       alphas = rnorm(d, -2, 1),
-       e_patient = array(rnorm(n_patients*d,0,1), dim=c(n_patients, d)),
-       abs_ystar = array(abs(rnorm(n*d,0,2)), dim=c(n,d))
+  list(betas_phi = array(rnorm(n_strains*n_strains,0,1), dim=c(n_strains,n_strains)),
+       betas_gam = array(rnorm(n_strains*n_strains,0,1), dim=c(n_strains,n_strains)),
+       betas_tbv_phi = rnorm(n_strains, 0, 1),
+       betas_tbv_gam = rnorm(n_strains, 0, 1),
+       alphas = rnorm(n_strains, -2, 1),
+       e_patient = array(rnorm(n_patients*n_strains,0,1), dim=c(n_patients, n_strains)),
+       abs_ystar = array(abs(rnorm(n*n_strains,0,2)), dim=c(n,n_strains))
        )
 }
 
@@ -48,7 +48,7 @@ params <- c('Rho_patient', 'Rho_visit',
             'betas_phi', 'betas_gam', 
             'betas_tbv_phi', 'betas_tbv_gam', 'alphas')
 
-test <- stan('./multivariate_probit/twolevel.stan',
+test <- stan('twolevel.stan',
               data = stan_d, chains = 1, iter = 2,
               init = inits_f,
               pars = params)

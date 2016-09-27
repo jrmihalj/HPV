@@ -1,21 +1,21 @@
 data {
   int n;
-  int d;
-  row_vector<lower = 0, upper = 1>[d] y[n];
+  int n_strains;
+  row_vector<lower = 0, upper = 1>[n_strains] y[n];
   int n_patient;
   int n_visit_max;
   int<lower = 1, upper = n_patient> patient[n];
   int<lower = 1, upper = n_visit_max> visit[n];
-  row_vector[d] tbv[n];
+  vector[n] tbv;
   vector[2] dir_prior;
   real<lower = 1> eta;
 }
 
 transformed data {
-  row_vector[d] sign[n];
-  row_vector[d] zero_vec;
+  row_vector[n_strains] sign[n];
+  row_vector[n_strains] zero_vec;
 
-  for (j in 1:d) {
+  for (j in 1:n_strains) {
     zero_vec[j] = 0;
     for (i in 1:n) {
       if (y[i, j] == 1) {
@@ -28,30 +28,30 @@ transformed data {
 }
 
 parameters {
-  cholesky_factor_corr[d] L_Rho_patient;
-  cholesky_factor_corr[d] L_Rho_visit;
-  row_vector<lower=0>[d] abs_ystar[n];
-  matrix[n_patient,d] e_patient;
-  simplex[2] var_mat[d];
-  matrix[d, d] betas_phi;
-  matrix[d, d] betas_gam_R;
-  vector[d] betas_tbv_phi;
-  vector[d] betas_tbv_gam;
-  vector[d] alphas;
+  cholesky_factor_corr[n_strains] L_Rho_patient;
+  cholesky_factor_corr[n_strains] L_Rho_visit;
+  row_vector<lower=0>[n_strains] abs_ystar[n];
+  matrix[n_patient,n_strains] e_patient;
+  simplex[2] var_mat[n_strains];
+  matrix[n_strains, n_strains] betas_phi;
+  matrix[n_strains, n_strains] betas_gam_R;
+  vector[n_strains] betas_tbv_phi;
+  vector[n_strains] betas_tbv_gam;
+  vector[n_strains] alphas;
 }
 
 transformed parameters {
-  cholesky_factor_cov[d] L_Sigma_visit;
-  cholesky_factor_cov[d] L_Sigma_patient;
-  vector<lower = 0>[d] sd_visit;
-  vector<lower = 0>[d] sd_patient;
-  matrix[n, d] fixedef_phi;
-  matrix[n, d] fixedef_gam;
-  matrix[n, d] fixedef;
-  matrix[d,d] betas_gam;
-  matrix[n, d] mu_all;
+  cholesky_factor_cov[n_strains] L_Sigma_visit;
+  cholesky_factor_cov[n_strains] L_Sigma_patient;
+  vector<lower = 0>[n_strains] sd_visit;
+  vector<lower = 0>[n_strains] sd_patient;
+  matrix[n, n_strains] fixedef_phi;
+  matrix[n, n_strains] fixedef_gam;
+  matrix[n, n_strains] fixedef;
+  matrix[n_strains,n_strains] betas_gam;
+  matrix[n, n_strains] mu_all;
 
-  for (i in 1:d) {
+  for (i in 1:n_strains) {
     sd_visit[i] = sqrt(var_mat[i, 1]);
     sd_patient[i] = sqrt(var_mat[i, 2]);
   }
@@ -59,8 +59,8 @@ transformed parameters {
   L_Sigma_patient = diag_pre_multiply(sd_patient, L_Rho_patient);
   L_Sigma_visit = diag_pre_multiply(sd_visit, L_Rho_visit);
 
-  for(j in 1:d){
-    for(i in 1:d){
+  for(j in 1:n_strains){
+    for(i in 1:n_strains){
       if(i == j){
         betas_gam[i,j] = 0;
       }else{
@@ -74,15 +74,15 @@ transformed parameters {
     fixedef_gam[i,] = y[i,] * betas_gam;
   }
 
-  for (j in 1:d) {
+  for (j in 1:n_strains) {
     for (i in 1:n) {
       if (visit[i] == 1){
         fixedef[i, j] = alphas[j];
       } else {
         if( y[i - 1, j] == 1){
-          fixedef[i, j] = alphas[j] + fixedef_phi[i - 1, j] + tbv[i,j] * betas_tbv_phi[j];
+          fixedef[i, j] = alphas[j] + fixedef_phi[i - 1, j] + tbv[i] * betas_tbv_phi[j];
         } else {
-          fixedef[i, j] = alphas[j] + fixedef_gam[i - 1, j] + tbv[i,j] * betas_tbv_gam[j];
+          fixedef[i, j] = alphas[j] + fixedef_gam[i - 1, j] + tbv[i] * betas_tbv_gam[j];
         }
       }
     }
@@ -92,7 +92,7 @@ transformed parameters {
 }
 
 model {
-  for (i in 1:d) {
+  for (i in 1:n_strains) {
     var_mat[i] ~ dirichlet(dir_prior);
     abs_ystar[i] ~ normal(0, 1);
   }
@@ -114,8 +114,8 @@ model {
 }
 
 generated quantities {
-  matrix[d, d] Rho_patient;
-  matrix[d, d] Rho_visit;
+  matrix[n_strains, n_strains] Rho_patient;
+  matrix[n_strains, n_strains] Rho_visit;
 
   Rho_patient = multiply_lower_tri_self_transpose(L_Rho_patient);
   Rho_visit = multiply_lower_tri_self_transpose(L_Rho_visit);
