@@ -4,7 +4,8 @@
 ###-------------------------------------------------------------------------------------------------------------------------------------------
 library(reshape)
 library(RSQLite)
-use_complete_data = TRUE
+library(tidyr)
+use_complete_data = FALSE
 ## FUNCTIONS ################## ----------------------------------------------------------
 ## stupid function to convert visit dates to numeric times ###
 get_timestep <- function(t){
@@ -12,7 +13,7 @@ get_timestep <- function(t){
 }
 
 ## function to get infection data for one strain 
-get_data_for_strain <- function(i, inf = inf_status, strain_list = test_strains){
+get_data_for_strain <- function(i, inf = inf_status, strain_list = test_strains, test_pat = subjectIds){
   this_strain = strain_list[[i]]
   cat("strain is", this_strain, "\n")
   data <- inf[inf$strainId == this_strain & inf$subjectId %in% test_pat,]
@@ -54,12 +55,12 @@ strainIds <- unique(inf_status$strainId)
 subjectIds <- unique(inf_status$subjectId)
 strainIds <- unique(inf_status$strainId)
 n_strains =  length(strainIds)
-n_pat <- 100 #length(subjectIds)
+n_pat <- length(subjectIds)
 visitIds <- unique(inf_status$visitId)
 n_vis = length(visitIds)
 
 test_pat <- sample(subjectIds, size = n_pat, replace = FALSE)
-test_strains <- paste0("hpv",c(6,11,16,18)) #,31,33,45,52,58,84))
+test_strains <- paste0("hpv",c(6,11,16,18,31,33,45,52,58,84))
 n_test_strains <- length(test_strains)
 
 ## Construct matrix of time between visits # -----------
@@ -75,12 +76,12 @@ names(tbv_df) <- c("subjectId",paste0("v",c(1:n_vis)))
 
 
 ## Get the data and format it # ------------------------------------------------------------
-df1 <- get_data_for_strain(1)
-df2 <- get_data_for_strain(2)
+df1 <- get_data_for_strain(1, test_pat = test_pat)
+df2 <- get_data_for_strain(2, test_pat = test_pat )
 df_all <- merge(df1,df2, by = c("site","time"))
 if(n_test_strains > 2){
   for( i in 3:n_test_strains){
-    df <- get_data_for_strain(i)
+    df <- get_data_for_strain(i, test_pat = test_pat)
     df_all <- merge(df_all, df, by = c("site","time"))
   }
 }
@@ -88,38 +89,54 @@ if(n_test_strains > 2){
 df_all <- df_all[order( df_all$site, df_all$time),]
 names(df_all) <- c("patient", "visit", test_strains)
 
+patients <- data.frame(subjectId = unique(df_all$patient),
+                       patient = c(1:length(unique(df_all$patient)))
+                    )
+df_all$pat <- 0
+for( i in 1:nrow(df_all)){
+  cat(" i is: ", i , "\n")
+  df_all[i,]$pat<- patients[which(df_all[i,]$patient == patients$subjectId ),]$patient
+}
+
 # get the correct set of time between visit data according to test patients --------------
 tbv <- melt(subset(tbv_df, subjectId %in% df_all$patient), id.vars = "subjectId")
+tbv <- tbv[order(tbv$subjectId),]
+
 
 ## Format all data into stan code input --------------------------------------------------
+## if variable numbers of visits are allowed, remove missing data 
+if(!use_complete_data){
+  missing_genotype <- which(is.na(rowSums(df_all[,-c(1:2)])))
+  missing_tbv <- which(is.na(tbv$value))
+  missing_any <- union(missing_genotype, missing_tbv)
+  df_all <- df_all[-missing_any,]
+  tbv <- tbv[-missing_any,]
+}
+
+stopifnot(tbv$subjectId == df_all$patient)
 n_visits <- length(visitIds)
 n_patients <- n_pat
-n <- n_patients * n_visits
+n <- nrow(df_all)
 y = as.matrix(df_all[,names(df_all) %in% test_strains])
-patient <- rep(c(1:n_patients), times = n_visits)
+patient <- df_all$pat
 visit <- df_all$visit
 time_between_visits <- tbv$value
 d <- ncol(y)
-
-if(!use_complete_data){
-  missing <- which(is.na(y[,1]))
-  visit[missing] <- -1
-}
 
 subjectIds <- data.frame(subjectId = df_all$patient,
                            patient_num = patient)
 
 stan_d <- list(n = n, 
-               d = d, 
+               n_strains = d, 
                y = y,
                eta = 2,
                patient = patient, 
                n_patient = n_patients,
-               n_visit = n_visits, 
+               n_visit_max = n_visits, 
                visit = visit,
                tbv = time_between_visits,
                dir_prior = c(1, 1))
 
-save(stan_d, subjectIds, file = "test_data_HIM_full.rda")
+save(stan_d, subjectIds, file = "test_data_HIM_full_10_strains.rda")
 
 ## NOT including 139,55,64###

@@ -17,19 +17,10 @@ if(simulate_data){
 }
 
 if(!simulate_data){
-  load("test_data_missing_HIM.rda")
-  # find missing visits
-  missing <- which(is.na(rowSums(stan_d$y)))
-  # find number and indices of complete observations 
-  n_complete_obs <- stan_d$n - length(missing)
-  stan_d$n_complete_obs <- n_complete_obs
-  complete_obs <- which(stan_d$visit != -1)
-  stan_d$complete_obs <- complete_obs
-  # stan doesn't accept "NA" so set missing 0/1 observations to be .5 
-  # (these will not be counted in the model but they need a placeholder)
-  y = stan_d$y
-  y[is.na(y)] <- .5
-  stan_d$y = y
+  load("test_data_HIM_200_pat.rda")
+  n_strains <- stan_d$n_strains
+  n_patients <- stan_d$n_patient
+  n <- stan_d$n
 }
 
 inits_f <- function(){
@@ -53,13 +44,17 @@ test <- stan('twolevel.stan',
               init = inits_f,
               pars = params)
 
+start_time <- Sys.time()
 m_fit <- stan(fit = test,
               data = stan_d,
               init = inits_f,
               chains = 3, iter = 2000, warmup = 1000, #thin=3,
               pars = params,
               control=list(max_treedepth=13))
+end_time <- Sys.time()
 
+time_taken <- start_time - end_time
+print(time_taken)
 # check convergence:
 summary(m_fit)$summary[,"Rhat"]
 
