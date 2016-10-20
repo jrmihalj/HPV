@@ -3,6 +3,10 @@ library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 simulate_data = FALSE 
+use_complete_data = TRUE 
+args = commandArgs(trailingOnly=TRUE)
+k = as.numeric(args[1])
+
 
 if(simulate_data){
   source('sim.R')
@@ -17,7 +21,7 @@ if(simulate_data){
 }
 
 if(!simulate_data){
-  load("test_data_HIM_full_10_strains.rda")
+  load("test_data_HIM_200_pat_2_strains.rda")
   n_strains <- stan_d$n_strains
   n_patients <- stan_d$n_patient
   n <- stan_d$n
@@ -52,14 +56,14 @@ fit_model <- function(i){
   m_fit <- stan(fit = test,
                 data = stan_d,
                 init = inits_f,
-                chains = 1, iter = 2000, warmup = 1000,
+                chains = 1, iter = 1500, warmup = 500,
                 pars = params,
                 control=list(max_treedepth=13))
   end <- Sys.time()
   time_taken = end - start
   print(time_taken)
   
-  filename <- paste0("fit_chain_", i, "10_strains_tbv_all_pat.rda")
+  filename <- paste0("fit_chain_", i, "_2_strains_tbv_200_pat.rda")
   save(m_fit, file = filename)
 }
 
