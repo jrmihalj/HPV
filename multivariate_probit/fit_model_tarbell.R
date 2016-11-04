@@ -1,9 +1,8 @@
 setwd("./Sylvia_HPV")
 
 library(rstan)
-library(parallel)
 rstan_options(auto_write = TRUE)
-#options(mc.cores = parallel::detectCores())
+options(mc.cores = parallel::detectCores())
 simulate_data = FALSE 
 use_complete_data = TRUE 
 
@@ -21,7 +20,7 @@ if(simulate_data){
 }
 
 if(!simulate_data){
-  load("test_data_HIM_200_pat_2_strains.rda")
+  load("full_HIM_data_10_strains.rda")
   n_strains <- stan_d$n_strains
   n_patients <- stan_d$n_patient
   n <- stan_d$n
@@ -45,28 +44,22 @@ params <- c('Rho_patient', 'Rho_visit',
 
 
 
-fit_model <- function(i){
-  
- # test <- stan('twolevel.stan',
-  #             data = stan_d, chains = 1, iter = 10,
-   #            init = inits_f,
-    #           pars = params)
-  
-  start <- Sys.time()
-  m_fit <- stan('twolevel.stan',
-		#fit = test,
-                data = stan_d,
-                init = inits_f,
-                chains = 1, iter = 1500, warmup = 500,
-                pars = params,
-                control=list(max_treedepth=13))
-  end <- Sys.time()
-  time_taken = end - start
-  print(time_taken)
-  
-  filename <- paste0("fit_chain_", i, "_2_strains_tbv_200_pat.rda")
-  save(m_fit, file = filename)
-}
+test <- stan('twolevel.stan',
+             data = stan_d, chains = 1, iter = 10,
+             init = inits_f,
+             pars = params)
 
-mclapply(c(1:3), FUN = fit_model, mc.cores = 3)
+start <- Sys.time()
+m_fit <- stan(fit = test,
+              data = stan_d,
+              init = inits_f,
+              chains = 3, iter = 1500, warmup = 500,
+              pars = params,
+              control=list(max_treedepth=13))
+end <- Sys.time()
+time_taken = end - start
+print(time_taken)
+
+filename <- "fit_full_HIM_10_strain.rda"
+save(m_fit, file = filename)
 

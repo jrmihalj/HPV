@@ -7,7 +7,7 @@
 ########################
 
 ### Set the name of the job, where jobname is a unique name for your job
-#PBS -N HPV_test
+#PBS -N HPV_null_norand
 
 ### Select the shell you would like the script to execute within
 #PBS -S /bin/bash
@@ -23,8 +23,8 @@
 #PBS -l mem=3gb
 
 ### Set the destination for your program's output.
-#PBS -o $HOME/HPV_fit.out
-#PBS -e $HOME/HPV_fit.err
+#PBS -o $HOME/HPV_null_norand.out
+#PBS -e $HOME/HPV_null_norand.err
 
 
 #################
@@ -40,4 +40,4 @@ module load R/3.3.1
 export TMP=/home/jmihaljevic1/tempfiles/
 
 # Execute the program
-R CMD BATCH ~/Sylvia_HPV/fit_model_tarbell.R
+R CMD BATCH ~/Sylvia_HPV/Null/fit_model_tarbell_null_norand.R
