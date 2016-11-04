@@ -1,12 +1,10 @@
-setwd("./Sylvia_HPV/Null")
-
 library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 use_complete_data = TRUE 
 
 # Load the data
-load("test_data_10_strains_all_patients.rda")
+load("data/test_data_10_strains_all_patients.rda")
 n_strains <- stan_d$n_strains
 n_patients <- stan_d$n_patient
 n <- stan_d$n
@@ -25,7 +23,7 @@ params <- c('Rho_patient', 'Rho_visit',
             'sd_visit', 'sd_patient', 'var_mat',
             'betas_tbv_phi', 'betas_tbv_gam', 'alphas')
 
-test <- stan('twolevel_null_nofixed.stan',
+test <- stan('code/stan/twolevel_null_nofixed.stan',
              data = stan_d, chains = 1, iter = 10,
              init = inits_f,
              pars = params)
@@ -41,6 +39,6 @@ end <- Sys.time()
 time_taken = end - start
 print(time_taken)
 
-filename <- "fit_full_null_nofixed.rda"
+filename <- "output/fit_full_null_nofixed.rda"
 save(m_fit, file = filename)
 

@@ -1,5 +1,3 @@
-setwd("./Sylvia_HPV")
-
 library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
@@ -8,7 +6,7 @@ use_complete_data = TRUE
 
 
 if(simulate_data){
-  source('sim.R')
+  source('code/R/sim.R')
   stan_d <- list(n = n, 
                  n_strains = n_strains, 
                  y = y,
@@ -20,7 +18,7 @@ if(simulate_data){
 }
 
 if(!simulate_data){
-  load("full_HIM_data_10_strains.rda")
+  load("data/full_HIM_data_10_strains.rda")
   n_strains <- stan_d$n_strains
   n_patients <- stan_d$n_patient
   n <- stan_d$n
@@ -44,7 +42,7 @@ params <- c('Rho_patient', 'Rho_visit',
 
 
 
-test <- stan('twolevel.stan',
+test <- stan('code/stan/twolevel.stan',
              data = stan_d, chains = 1, iter = 10,
              init = inits_f,
              pars = params)
@@ -60,6 +58,6 @@ end <- Sys.time()
 time_taken = end - start
 print(time_taken)
 
-filename <- "fit_full_HIM_10_strain.rda"
+filename <- "output/fit_full_HIM_10_strain.rda"
 save(m_fit, file = filename)
 
