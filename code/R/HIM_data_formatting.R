@@ -27,7 +27,7 @@ get_data_for_strain <- function(i, inf = inf_status, strain_list = test_strains,
 }
 
 ## Create data for stan model #####-----------------------------------------------------------------
-dbFilename <- "HIMdata_Mar_2015.sqlite"
+dbFilename <- "data/HIMdata_Mar_2015.sqlite"
 db <- dbConnect(SQLite(), dbFilename)
 tableNames <- dbListTables(db)
 inf_status <- dbReadTable(db,"infectionStatusByVisit")
@@ -137,6 +137,6 @@ stan_d <- list(n = n,
                tbv = time_between_visits,
                dir_prior = c(1, 1))
 
-save(stan_d, subjectIds, file = "test_data_HIM_full_10_strains.rda")
+save(stan_d, subjectIds, file = "data/test_data_HIM_full_10_strains.rda")
 
 ## NOT including 139,55,64###

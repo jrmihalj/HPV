@@ -1,5 +1,3 @@
-setwd("./Sylvia_HPV")
-
 library(rstan)
 library(parallel)
 rstan_options(auto_write = TRUE)
@@ -9,7 +7,7 @@ use_complete_data = TRUE
 
 
 if(simulate_data){
-  source('sim.R')
+  source('code/R/sim.R')
   stan_d <- list(n = n, 
                  n_strains = n_strains, 
                  y = y,
@@ -21,7 +19,7 @@ if(simulate_data){
 }
 
 if(!simulate_data){
-  load("test_data_HIM_200_pat_2_strains.rda")
+  load("data/test_data_HIM_200_pat_2_strains.rda") # does not exist?
   n_strains <- stan_d$n_strains
   n_patients <- stan_d$n_patient
   n <- stan_d$n
@@ -53,7 +51,7 @@ fit_model <- function(i){
     #           pars = params)
   
   start <- Sys.time()
-  m_fit <- stan('twolevel.stan',
+  m_fit <- stan('code/stan/twolevel.stan',
 		#fit = test,
                 data = stan_d,
                 init = inits_f,
@@ -64,7 +62,7 @@ fit_model <- function(i){
   time_taken = end - start
   print(time_taken)
   
-  filename <- paste0("fit_chain_", i, "_2_strains_tbv_200_pat.rda")
+  filename <- paste0("output/fit_chain_", i, "_2_strains_tbv_200_pat.rda")
   save(m_fit, file = filename)
 }
 
