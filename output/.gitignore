@@ -1,0 +1,1 @@
+*.rda # ignore all of the model output files (they will be too big!)

@@ -1,0 +1,43 @@
+#!/bin/bash
+
+########################
+#                      #
+# Scheduler Directives #
+#                      #
+########################
+
+### Set the name of the job, where jobname is a unique name for your job
+#PBS -N HPV_null_null
+
+### Select the shell you would like the script to execute within
+#PBS -S /bin/bash
+
+### Inform the scheduler of the expected runtime, where walltime=HH:MM:SS
+#PBS -l walltime=168:00:00
+
+### Inform the scheduler of the number of CPU cores for your job.
+#PBS -l nodes=1:ppn=3
+
+### Inform the scheduler of the amount of memory you expect to use.
+### Use units of 'b', 'kb', 'mb', or 'gb'
+#PBS -l mem=3gb
+
+### Set the destination for your program's output.
+#PBS -o $HOME/HPV_null_null.out
+#PBS -e $HOME/HPV_null_null.err
+
+
+#################
+#               #
+# Job Execution #
+#               #
+#################
+
+# Load the approprite applications
+module load R/3.3.1
+
+# Reset TMP file location
+export TMP= ~/tempfiles/
+
+# Execute the program
+R CMD BATCH ~/Sylvia_HPV/code/R/fit_model_tarbell_null_null.R
