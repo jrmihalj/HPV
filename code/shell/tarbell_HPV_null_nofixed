@@ -40,4 +40,4 @@ module load R/3.3.1
 export TMP= ~/tempfiles/
 
 # Execute the program
-R CMD BATCH ~/Sylvia_HPV/code/R/fit_model_tarbell_null_nofixed.R
+R CMD BATCH --no-save ~/Sylvia_HPV/code/R/fit_model_tarbell_null_nofixed.R
