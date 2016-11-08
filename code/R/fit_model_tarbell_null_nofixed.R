@@ -3,6 +3,8 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 use_complete_data = TRUE 
 
+setwd("~/Sylvia_HPV")
+
 # Load the data
 load("data/full_HIM_data_10_strains_all_patients.rda")
 n_strains <- stan_d$n_strains
