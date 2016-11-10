@@ -3,7 +3,7 @@ library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
-source('code/R/sim.R')
+source('sim.R')
 stan_d <- list(n = n, 
                n_strains = n_strains, 
                y = y,
@@ -28,12 +28,14 @@ inits_f <- function(){
 params <- c('Rho_patient', 'Rho_visit',
             'sd_visit', 'sd_patient', 'var_mat',
             'betas_phi', 'betas_gam', 
-            'betas_tbv_phi', 'betas_tbv_gam', 'alphas')
+            'betas_tbv_phi', 'betas_tbv_gam', 'alphas', 'log_lik')
 
-test <- stan('code/stan/twolevel.stan',
-              data = stan_d, chains = 1, iter = 2,
+params_null <- c('betas_tbv_phi', 'betas_tbv_gam', 'alphas','log_lik')
+
+test <- stan('../stan/twolevel_null_null.stan',
+              data = stan_d, chains = 1, iter = 10, warmup =2,
               init = inits_f,
-              pars = params)
+              pars = params_null)
 
 start_time <- Sys.time()
 m_fit <- stan(fit = test,
