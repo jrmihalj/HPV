@@ -72,3 +72,12 @@ model {
   }
   
 }
+
+generated quantities {
+  vector[n_strains] log_lik[n];
+  for(j in 1:n_strains){
+  	for (i in 1:n){
+    	log_lik[i,j] <- normal_log(sign[i, j] .* abs_ystar[i, j], mu_all[i, j], 1);
+	}
+  }
+}
