@@ -23,7 +23,7 @@ inits_f <- function(){
 
 params <- c('Rho_patient', 'Rho_visit',
             'sd_visit', 'sd_patient', 'var_mat',
-            'betas_tbv_phi', 'betas_tbv_gam', 'alphas')
+            'betas_tbv_phi', 'betas_tbv_gam', 'alphas', 'log_lik')
 
 test <- stan('code/stan/twolevel_null_nofixed.stan',
              data = stan_d, chains = 1, iter = 10,

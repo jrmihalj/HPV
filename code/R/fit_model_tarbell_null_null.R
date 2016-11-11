@@ -19,7 +19,7 @@ inits_f <- function(){
        )
 }
 
-params <- c('betas_tbv_phi', 'betas_tbv_gam', 'alphas')
+params <- c('betas_tbv_phi', 'betas_tbv_gam', 'alphas', 'log_lik')
 
 test <- stan('code/stan/twolevel_null_null.stan',
              data = stan_d, chains = 1, iter = 10,
