@@ -19,6 +19,7 @@ Rhat <- summary(m_fit)$summary[,"Rhat"]
 
 #Did any params fail to converge? 
 sum(Rhat > 1.1 | Rhat < .9, na.rm=T)
+Rhat[Rhat > 1.1 | Rhat < .9]
 
 #check traceplots:
 traceplot(m_fit, pars = 'lp__')
