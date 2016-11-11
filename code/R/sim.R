@@ -5,7 +5,7 @@ library(clusterGeneration)
 
 ## high level data parameters --------------------------------------------------
 n_strains <- 2
-n_patients <- 250
+n_patients <- 50
 n_visit_max <- 10
 
 
