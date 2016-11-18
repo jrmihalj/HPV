@@ -2,6 +2,7 @@
 *.Rproj
 .Rhistory
 .RData
+*.rds
 *.rda
 README.pdf
 *.DS_Store

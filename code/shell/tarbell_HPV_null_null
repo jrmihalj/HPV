@@ -20,7 +20,7 @@
 
 ### Inform the scheduler of the amount of memory you expect to use.
 ### Use units of 'b', 'kb', 'mb', or 'gb'
-#PBS -l mem=3gb
+#PBS -l mem=24gb
 
 ### Set the destination for your program's output.
 #PBS -o $HOME/HPV_null_null.out

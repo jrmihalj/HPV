@@ -4,21 +4,10 @@ options(mc.cores = parallel::detectCores())
 simulate_data = FALSE 
 use_complete_data = TRUE 
 
-
-if(simulate_data){
-  source('code/R/sim.R')
-  stan_d <- list(n = n, 
-                 n_strains = n_strains, 
-                 y = y,
-                 tbv = tbv,
-                 eta = 2,
-                 patient = patient, n_patient = n_patients,
-                 n_visit_max = n_visit_max, visit = visit,
-                 dir_prior = c(1, 1))
-}
+setwd("~/Sylvia_HPV/")
 
 if(!simulate_data){
-  load("data/full_HIM_data_10_strains.rda")
+  load("data/full_HIM_data_10_strains_all_patients.rda")
   n_strains <- stan_d$n_strains
   n_patients <- stan_d$n_patient
   n <- stan_d$n
@@ -38,8 +27,7 @@ inits_f <- function(){
 params <- c('Rho_patient', 'Rho_visit',
             'sd_visit', 'sd_patient', 'var_mat',
             'betas_phi', 'betas_gam', 
-            'betas_tbv_phi', 'betas_tbv_gam', 'alphas')
-
+            'betas_tbv_phi', 'betas_tbv_gam', 'alphas', 'log_lik')
 
 
 test <- stan('code/stan/twolevel.stan',
@@ -51,13 +39,13 @@ start <- Sys.time()
 m_fit <- stan(fit = test,
               data = stan_d,
               init = inits_f,
-              chains = 3, iter = 1500, warmup = 500,
+              chains = 3, iter = 3000, warmup = 2000,
               pars = params,
               control=list(max_treedepth=13))
 end <- Sys.time()
 time_taken = end - start
 print(time_taken)
 
-filename <- "output/fit_full_HIM_10_strain.rda"
+filename <- "output/fit_full_HIM_10_strain_all_patients.rda"
 save(m_fit, file = filename)
 
