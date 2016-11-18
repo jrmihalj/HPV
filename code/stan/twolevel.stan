@@ -122,8 +122,6 @@ generated quantities {
   Rho_visit = multiply_lower_tri_self_transpose(L_Rho_visit);
   
   for (i in 1:n) {
-    log_lik[i] <- multi_normal_cholesky_log((sign[i,] .* abs_ystar[i,]), mu_all[i, ], L_Sigma_visit);
+    log_lik[i] = multi_normal_cholesky_lpdf((sign[i,] .* abs_ystar[i,]) | mu_all[i, ], L_Sigma_visit);
   }
 }
-
-

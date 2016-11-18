@@ -37,7 +37,7 @@
 module load R/3.3.1
 
 # Reset TMP file location
-export TMP=/home/jmihaljevic1/tempfiles/
+export TMP=/home/jmihaljevic1/tempfiles/HPV/
 
 # Execute the program
 R CMD BATCH ~/Sylvia_HPV/code/R/fit_model_tarbell.R

@@ -1,1 +1,3 @@
-*.rda # ignore all of the model output files (they will be too big!)
+# ignore all of the model output files (they will be too big!)
+*.rda 
+*.rds

@@ -46,6 +46,14 @@ end <- Sys.time()
 time_taken = end - start
 print(time_taken)
 
-filename <- "output/fit_full_HIM_10_strain_all_patients.rda"
-save(m_fit, file = filename)
+object.size(m_fit)
+
+R_hats = summary(m_fit)$summary[,"Rhat"]
+filename = "output/R_hats_full.rds"
+saveRDS(R_hats, file = filename)
+
+posts = extract(m_fit)
+filename <- "output/fit_full.rds"
+saveRDS(posts, file = filename)
+
 
