@@ -3,7 +3,7 @@ rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 use_complete_data = TRUE 
 
-setwd("~/Sylvia_HPV")
+setwd("/scratch/jmihaljevic1/HPV/")
 
 # Load the data
 load("data/full_HIM_data_10_strains_all_patients.rda")

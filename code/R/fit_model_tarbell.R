@@ -4,7 +4,7 @@ options(mc.cores = parallel::detectCores())
 simulate_data = FALSE 
 use_complete_data = TRUE 
 
-setwd("~/Sylvia_HPV/")
+setwd("/scratch/jmihaljevic1/HPV/")
 
 if(!simulate_data){
   load("data/full_HIM_data_10_strains_all_patients.rda")
