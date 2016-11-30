@@ -40,4 +40,4 @@ module load R/3.3.1
 export TMP=/scratch/jmihaljevic1/tempfiles/HPV/
 
 # Execute the program
-R CMD BATCH --no-save ~/Sylvia_HPV/code/R/fit_model_tarbell_null_norand.R
+R CMD BATCH --no-save /scratch/jmihaljevic1/HPV/code/R/fit_model_tarbell_null_norand.R

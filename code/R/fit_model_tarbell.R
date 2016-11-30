@@ -39,7 +39,7 @@ start <- Sys.time()
 m_fit <- stan(fit = test,
               data = stan_d,
               init = inits_f,
-              chains = 3, iter = 3000, warmup = 2000,
+              chains = 3, iter = 5000, warmup = 2000, thin = 7,
               pars = params,
               control=list(max_treedepth=13))
 end <- Sys.time()
@@ -53,7 +53,7 @@ filename = "output/R_hats_full.rds"
 saveRDS(R_hats, file = filename)
 
 posts = extract(m_fit)
-filename <- "output/fit_full.rds"
+filename = "output/fit_full.rds"
 saveRDS(posts, file = filename)
 
 

@@ -48,6 +48,6 @@ filename = "output/R_hats_null_nofixed.rds"
 saveRDS(R_hats, file = filename)
 
 posts = extract(m_fit)
-filename <- "output/fit_full_null_nofixed.rds"
+filename = "output/fit_full_null_nofixed.rds"
 saveRDS(posts, file = filename)
 

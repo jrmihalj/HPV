@@ -47,7 +47,7 @@ filename = "output/R_hats_null_norand.rds"
 saveRDS(R_hats, file = filename)
 
 posts = extract(m_fit)
-filename <- "output/fit_full_null_norand.rds"
+filename = "output/fit_full_null_norand.rds"
 saveRDS(posts, file = filename)
 
 
