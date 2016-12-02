@@ -40,14 +40,36 @@ end <- Sys.time()
 time_taken = end - start
 print(time_taken)
 
-object.size(m_fit)
-
 R_hats = summary(m_fit)$summary[,"Rhat"]
 filename = "output/R_hats_null_norand.rds"
 saveRDS(R_hats, file = filename)
 
-posts = extract(m_fit)
-filename = "output/fit_full_null_norand.rds"
+posts = extract(m_fit, pars = params[1:5])
+filename = "output/posts_full_null_norand.rds"
 saveRDS(posts, file = filename)
 
+# extract log_lik
+log_lik = extract(m_fit, pars = "log_lik")$log_lik
+
+# clear some memory:
+rm(posts, R_hats, m_fit)
+
+# Re-dimensionalize to a Sample x Observation matrix:
+n_sample = 3000
+dim(log_lik) = c(n_sample, n*n_strains)
+
+# Now split the matrix into manageable pieces:
+# Split by row (nrow = n_sample)
+n_files = 10
+max_row = n_sample / n_files
+these_splits = split(1:n_sample, ceiling((1:n_sample)/max_row))
+
+for(i in 1:length(these_splits)){
+  
+  lower = range(these_splits[[i]])[1]
+  upper = range(these_splits[[i]])[2]
+  
+  saveRDS(log_lik[lower:upper,], 
+          file = paste("output/loglik_full_null_norand_", i, ".rds", sep=""))
+}
 

@@ -37,7 +37,6 @@ end <- Sys.time()
 time_taken = end - start
 print(time_taken)
 
-
 R_hats = summary(m_fit)$summary[,"Rhat"]
 filename = "output/R_hats_null_null.rds"
 saveRDS(R_hats, file = filename)
@@ -50,7 +49,7 @@ saveRDS(posts, file = filename)
 log_lik = extract(m_fit, pars = "log_lik")$log_lik
 
 # clear some memory:
-rm(posts, Rhats)
+rm(posts, R_hats, m_fit)
 
 # Re-dimensionalize to a Sample x Observation matrix:
 n_sample = 3000

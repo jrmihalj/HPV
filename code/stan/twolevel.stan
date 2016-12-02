@@ -114,7 +114,7 @@ model {
 }
 
 generated quantities {
-  vector[n] log_lik;
+  real log_lik[n];
   matrix[n_strains, n_strains] Rho_patient;
   matrix[n_strains, n_strains] Rho_visit;
   
