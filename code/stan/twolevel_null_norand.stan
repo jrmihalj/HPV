@@ -94,17 +94,17 @@ model {
   }
   
   //Hyper-parameters
-  phi_mean ~ normal(0, 5);
-  gam_mean ~ normal(0, 5);
-  tbv_phi_mean ~ normal(0, 5);
-  tbv_gam_mean ~ normal(0, 5);
-  alpha_mean ~ normal(0, 5);
+  phi_mean ~ normal(0,1.5);
+  gam_mean ~ normal(0,1.5);
+  tbv_phi_mean ~ normal(0,1.5);
+  tbv_gam_mean ~ normal(0,1.5);
+  alpha_mean ~ normal(0,1.5);
   
-  phi_sd ~ cauchy(0,2);
-  gam_sd ~ cauchy(0,2);
-  tbv_phi_sd ~ cauchy(0,2);
-  tbv_gam_sd ~ cauchy(0,2);
-  alpha_sd ~ cauchy(0,2);
+  phi_sd ~ normal(0,1);
+  gam_sd ~ normal(0,1);
+  tbv_phi_sd ~ normal(0,1);
+  tbv_gam_sd ~ normal(0,1);
+  alpha_sd ~ normal(0,1);
   
   //Parameters
   to_vector(betas_phi) ~ normal(phi_mean, phi_sd);

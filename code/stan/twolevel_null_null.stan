@@ -71,13 +71,13 @@ model {
   }
   
   //Hyper-parameters
-  tbv_phi_mean ~ normal(0, 5);
-  tbv_gam_mean ~ normal(0, 5);
-  alpha_mean ~ normal(0, 5);
+  tbv_phi_mean ~ normal(0,1.5);
+  tbv_gam_mean ~ normal(0,1.5);
+  alpha_mean ~ normal(0,1.5);
   
-  tbv_phi_sd ~ cauchy(0,2);
-  tbv_gam_sd ~ cauchy(0,2);
-  alpha_sd ~ cauchy(0,2);
+  tbv_phi_sd ~ normal(0,1);
+  tbv_gam_sd ~ normal(0,1);
+  alpha_sd ~ normal(0,1);
   
   //Parameters
   betas_tbv_phi ~ normal(tbv_phi_mean, tbv_phi_sd);
