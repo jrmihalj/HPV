@@ -36,6 +36,15 @@ parameters {
   vector[n_strains] betas_tbv_phi;
   vector[n_strains] betas_tbv_gam;
   vector[n_strains] alphas;
+  
+  //Hyper-parameters
+  real tbv_phi_mean;
+  real tbv_gam_mean;
+  real alpha_mean;
+  
+  real < lower = 0 > tbv_phi_sd; 
+  real < lower = 0 > tbv_gam_sd;
+  real < lower = 0 > alpha_sd;
 }
 
 transformed parameters {
@@ -80,9 +89,20 @@ model {
   
   L_Rho_patient ~ lkj_corr_cholesky(eta);
   L_Rho_visit ~ lkj_corr_cholesky(eta);
-  betas_tbv_phi ~ normal(0, 1);
-  betas_tbv_gam ~ normal(0, 1);
-  alphas ~ normal(-2, 1.5);
+  
+ //Hyper-parameters
+  tbv_phi_mean ~ normal(0, 5);
+  tbv_gam_mean ~ normal(0, 5);
+  alpha_mean ~ normal(0, 5);
+  
+  tbv_phi_sd ~ cauchy(0,2);
+  tbv_gam_sd ~ cauchy(0,2);
+  alpha_sd ~ cauchy(0,2);
+  
+  //Parameters
+  betas_tbv_phi ~ normal(tbv_phi_mean, tbv_phi_sd);
+  betas_tbv_gam ~ normal(tbv_gam_mean, tbv_gam_sd);
+  alphas ~ normal(alpha_mean, alpha_sd);
   
   for (i in 1:n_patient){
     e_patient[i, ] ~ multi_normal_cholesky(zero_vec, L_Sigma_patient);

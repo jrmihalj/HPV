@@ -23,7 +23,10 @@ inits_f <- function(){
 
 params <- c('Rho_patient', 'Rho_visit',
             'sd_visit', 'sd_patient', 'var_mat',
-            'betas_tbv_phi', 'betas_tbv_gam', 'alphas', 'log_lik')
+            'betas_tbv_phi', 'tbv_phi_mean', 'tbv_phi_sd',
+            'betas_tbv_gam', 'tbv_gam_mean', 'tbv_gam_sd',
+            'alphas', 'alpha_mean', 'alpha_sd',
+            'log_lik')
 
 test <- stan('code/stan/twolevel_null_nofixed.stan',
              data = stan_d, chains = 1, iter = 10,
@@ -45,7 +48,7 @@ R_hats = summary(m_fit)$summary[,"Rhat"]
 filename = "output/R_hats_null_nofixed.rds"
 saveRDS(R_hats, file = filename)
 
-posts = extract(m_fit, pars = params[1:5])
+posts = extract(m_fit, pars = params[1:14])
 filename = "output/posts_full_null_nofixed.rds"
 saveRDS(posts, file = filename)
 

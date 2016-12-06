@@ -21,8 +21,12 @@ inits_f <- function(){
        )
 }
 
-params <- c('betas_phi', 'betas_gam', 
-            'betas_tbv_phi', 'betas_tbv_gam', 'alphas', 'log_lik')
+params <- c('betas_phi', 'phi_mean', 'phi_sd',
+            'betas_gam', 'gam_mean', 'gam_sd',
+            'betas_tbv_phi', 'tbv_phi_mean', 'tbv_phi_sd',
+            'betas_tbv_gam', 'tbv_gam_mean', 'tbv_gam_sd',
+            'alphas', 'alpha_mean', 'alpha_sd',
+            'log_lik')
 
 test <- stan('code/stan/twolevel_null_norand.stan',
              data = stan_d, chains = 1, iter = 10,
@@ -44,7 +48,7 @@ R_hats = summary(m_fit)$summary[,"Rhat"]
 filename = "output/R_hats_null_norand.rds"
 saveRDS(R_hats, file = filename)
 
-posts = extract(m_fit, pars = params[1:5])
+posts = extract(m_fit, pars = params[1:15])
 filename = "output/posts_full_null_norand.rds"
 saveRDS(posts, file = filename)
 

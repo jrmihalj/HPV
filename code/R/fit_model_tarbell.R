@@ -26,8 +26,12 @@ inits_f <- function(){
 
 params <- c('Rho_patient', 'Rho_visit',
             'sd_visit', 'sd_patient', 'var_mat',
-            'betas_phi', 'betas_gam', 
-            'betas_tbv_phi', 'betas_tbv_gam', 'alphas', 'log_lik')
+            'betas_phi', 'phi_mean', 'phi_sd',
+            'betas_gam', 'gam_mean', 'gam_sd',
+            'betas_tbv_phi', 'tbv_phi_mean', 'tbv_phi_sd',
+            'betas_tbv_gam', 'tbv_gam_mean', 'tbv_gam_sd',
+            'alphas', 'alpha_mean', 'alpha_sd',
+            'log_lik')
 
 
 test <- stan('code/stan/twolevel.stan',
@@ -46,14 +50,36 @@ end <- Sys.time()
 time_taken = end - start
 print(time_taken)
 
-object.size(m_fit)
-
 R_hats = summary(m_fit)$summary[,"Rhat"]
 filename = "output/R_hats_full.rds"
 saveRDS(R_hats, file = filename)
 
-posts = extract(m_fit)
-filename = "output/fit_full.rds"
+posts = extract(m_fit, pars = params[1:14])
+filename = "output/posts_full.rds"
 saveRDS(posts, file = filename)
 
+# extract log_lik
+log_lik = extract(m_fit, pars = "log_lik")$log_lik
+
+# clear some memory:
+rm(posts, R_hats, m_fit)
+
+# # Re-dimensionalize to a Sample x Observation matrix:
+# n_sample = 3000
+# dim(log_lik) = c(n_sample, n*n_strains)
+
+# Now split the matrix into manageable pieces:
+# Split by row (nrow = n_sample)
+n_files = 10
+max_row = n_sample / n_files
+these_splits = split(1:n_sample, ceiling((1:n_sample)/max_row))
+
+for(i in 1:length(these_splits)){
+  
+  lower = range(these_splits[[i]])[1]
+  upper = range(these_splits[[i]])[2]
+  
+  saveRDS(log_lik[lower:upper,], 
+          file = paste("output/loglik_full_", i, ".rds", sep=""))
+}
 

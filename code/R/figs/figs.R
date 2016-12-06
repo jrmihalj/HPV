@@ -466,7 +466,7 @@ beta_phi_med$strain2 = as.numeric(as.factor((beta_phi_med$strain2)))
 plot_beta_phi = 
   ggplot(beta_phi_med, aes(x = strain1, y = strain2, fill = med_fixed)) +
   geom_tile() +
-  scale_fill_gradient2(expression(beta[phi]), limits = c(-1,1), breaks = c(-1,0,1),
+  scale_fill_gradient2(expression(bold(beta[phi])), limits = c(-1,1), breaks = c(-1,0,1),
                        labels = c("-1", "  0", "  1"),
                        na.value = "white", low="red", mid = "white", high="blue") +
   theme_classic() +
@@ -477,9 +477,12 @@ plot_beta_phi =
                      labels = paste0("hpv",c(6,11,16,18,31,33,45,52,58,84)),
                      position = "top") +
   labs(x="", y="") + 
-  theme(axis.text.x.top = element_text(angle=30, vjust = 0.5))
+  theme(axis.text.x.top = element_text(angle=30, vjust = 0.5),
+        axis.text = element_text(size = 12, face = "bold", color = "black"),
+        legend.title = element_text(size = 12, face = "bold"),
+        legend.text = element_text(size = 12))
 
-quartz(height=6, width=6, dpi=300)
+quartz(height=4, width=5, dpi=300)
 plot_beta_phi
 if(save_it) ggsave("./figs/beta_phi.pdf")
 
@@ -516,7 +519,7 @@ beta_gam_med$strain2 = as.numeric(as.factor((beta_gam_med$strain2)))
 plot_beta_gam = 
   ggplot(beta_gam_med, aes(x = strain1, y = strain2, fill = med_fixed)) +
   geom_tile() +
-  scale_fill_gradient2(expression(beta[gamma]), limits = c(-1,1), breaks = c(-1,0,1),
+  scale_fill_gradient2(expression(bold(beta[gamma])), limits = c(-1,1), breaks = c(-1,0,1),
                        labels = c("-1", "  0", "  1"),
                        na.value = "white", low="red", mid = "white", high="blue") +
   theme_classic() +
@@ -527,9 +530,12 @@ plot_beta_gam =
                      labels = paste0("hpv",c(6,11,16,18,31,33,45,52,58,84)),
                      position = "top") +
   labs(x="", y="") + 
-  theme(axis.text.x.top = element_text(angle=30, vjust = 0.5))
+  theme(axis.text.x.top = element_text(angle=30, vjust = 0.5),
+        axis.text = element_text(size = 12, face = "bold", color = "black"),
+        legend.title = element_text(size = 12, face = "bold"),
+        legend.text = element_text(size = 12))
 
-quartz(height=6, width=6, dpi=300)
+quartz(height=4, width=5, dpi=300)
 plot_beta_gam
 if(save_it) ggsave("./figs/beta_gam.pdf")
 

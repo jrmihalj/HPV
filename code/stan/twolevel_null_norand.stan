@@ -34,6 +34,19 @@ parameters {
   vector[n_strains] betas_tbv_phi;
   vector[n_strains] betas_tbv_gam;
   vector[n_strains] alphas;
+  
+  //Hyper-parameters
+  real phi_mean; 
+  real gam_mean; 
+  real tbv_phi_mean;
+  real tbv_gam_mean;
+  real alpha_mean;
+  
+  real < lower = 0 > phi_sd; 
+  real < lower = 0 > gam_sd; 
+  real < lower = 0 > tbv_phi_sd; 
+  real < lower = 0 > tbv_gam_sd;
+  real < lower = 0 > alpha_sd; 
 }
 
 transformed parameters {
@@ -80,11 +93,25 @@ model {
     abs_ystar[i] ~ normal(0, 1);
   }
   
-  to_vector(betas_phi) ~ normal(0, 1);
-  to_vector(betas_gam_R) ~ normal(0, 1);
-  betas_tbv_phi ~ normal(0, 1);
-  betas_tbv_gam ~ normal(0, 1);
-  alphas ~ normal(-2, 1.5);
+  //Hyper-parameters
+  phi_mean ~ normal(0, 5);
+  gam_mean ~ normal(0, 5);
+  tbv_phi_mean ~ normal(0, 5);
+  tbv_gam_mean ~ normal(0, 5);
+  alpha_mean ~ normal(0, 5);
+  
+  phi_sd ~ cauchy(0,2);
+  gam_sd ~ cauchy(0,2);
+  tbv_phi_sd ~ cauchy(0,2);
+  tbv_gam_sd ~ cauchy(0,2);
+  alpha_sd ~ cauchy(0,2);
+  
+  //Parameters
+  to_vector(betas_phi) ~ normal(phi_mean, phi_sd);
+  to_vector(betas_gam_R) ~ normal(gam_mean, gam_sd);
+  betas_tbv_phi ~ normal(tbv_phi_mean, tbv_phi_sd);
+  betas_tbv_gam ~ normal(tbv_gam_mean, tbv_gam_sd);
+  alphas ~ normal(alpha_mean, alpha_sd);
   
   for(j in 1:n_strains){
     for (i in 1:n) {
