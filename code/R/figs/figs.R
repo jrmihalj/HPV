@@ -73,7 +73,7 @@ save_it = 1
 # Co-occurrence data from raw:
 ################################################
 
-load(.) # from raw_data_analysis
+load("./code/R/figs/raw_data_figs.RData") # from raw_data_analysis
 
 df_cooccur = full_data_cooccur$results
 #p_lt prob less than expected (negative)
@@ -142,7 +142,7 @@ dfm_last = filter(dfm, variable == "v10")
 plot_prev =
   ggplot(dfm, aes(x = factor(variable), y = value, group = strain)) + 
   geom_line(aes(color = strain), size=1.25) + 
-  scale_color_futurama(name = "Strain") + 
+  scale_color_futurama(name = "Type") + 
   scale_y_continuous(limits = c(0, 0.095), breaks = c(0, 0.02, 0.04, 0.06, 0.08)) +
   scale_x_discrete(labels = 1:10) +
   annotate("text", x = dfm_last$variable, y = dfm_last$value, label = dfm_last$strain,
@@ -152,10 +152,11 @@ plot_prev =
         axis.line.y = element_line(),
         axis.text = element_text(size = 12, face = "bold", color = "black"),
         axis.title = element_text(size = 14, face = "bold", color = "black"),
-        legend.text = element_text(size = 12, color = "black")) + 
+        legend.text = element_text(size = 12, color = "black"),
+        legend.position = "bottom", legend.direction = "horizontal", legend.justification = "left") + 
   labs(x = "Visit", y = "Prevalence")
 
-quartz(height=4, width=5.5, dpi = 300)
+quartz(height=5.5, width=5.5, dpi = 300)
 plot_prev
 if(save_it) ggsave("./figs/prevalence.pdf")
 
@@ -182,6 +183,7 @@ plot_simpson1 =
   scale_x_continuous(limits = c(-3,3), breaks = c(-3,0,3)) +
   #scale_y_continuous(limits = c(0,1), breaks = c(0,.5,1)) +
   #scale_x_continuous(limits = c(0,1), breaks = c(0,.5,1)) +
+  geom_smooth(se = F, method="lm", fullrange = T, linetype = 2, size = 1, color = "black") +
   theme_classic() +
   theme(axis.line.x = element_line(),
         axis.line.y = element_line(),
@@ -217,7 +219,7 @@ plot_simpson =
                                gp=gpar(fontsize = 14, fontface = "bold")))
 quartz(height=5, width = 12)
 grid.arrange(plot_simpson)
-if(save_it) ggsave("./figs/simpson.pdf", plot_simpson, height=5, width=12, dpi=300)
+if(save_it) ggsave("./figs/simpson_lines.pdf", plot_simpson, height=5, width=12, dpi=300)
 
 ################################################
 # Results from postseriors:
