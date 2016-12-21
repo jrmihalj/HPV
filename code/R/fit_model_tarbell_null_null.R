@@ -8,7 +8,7 @@ setwd("/scratch/jmihaljevic1/HPV/")
 # set chain ID to PID
 k = Sys.getpid()
 print(k)
-dbResultsFilename <- paste0("fit_null_null_chain_",k,".sqlite")
+dbResultsFilename <- paste0("./output/fit_null_null_chain_",k,".sqlite")
 
 # Load the data:
 load("data/full_HIM_data_10_strains_all_patients.rda")
@@ -70,8 +70,15 @@ for( i in 1:length(posts)){
 }
 
 # extract log_lik
-log_lik_df = as.data.frame(extract(m_fit, pars = "log_lik")$log_lik)
-log_lik_df$chain = k
+# extract log_lik
+log_lik = extract(m_fit, pars = "log_lik")$log_lik
+
+# Re-dimensionalize to an observation x sample matrix:
+n_sample = dim(log_lik)[1]
+dim(log_lik) = c(n_sample, n*n_strains)
+log_lik = t(log_lik) #Now it's an observation x sample matrix
+log_lik_df = as.data.frame(log_lik)
+#log_lik_df$chain = k
 table_name <- "loglik"
 db <- dbConnect(SQLite(), dbResultsFilename)
 dbWriteTable(db,table_name,log_lik_df, append=TRUE)
