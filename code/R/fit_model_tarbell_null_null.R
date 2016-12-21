@@ -39,7 +39,7 @@ start <- Sys.time()
 m_fit <- stan(fit = test,
               data = stan_d,
               init = inits_f,
-              chains = 1, iter = 5000, warmup = 2000, thin = 7,
+              chains = 1, iter = 1500, warmup = 500, #thin = 7,
               pars = params,
               control=list(max_treedepth=13))
 end <- Sys.time()
