@@ -4,6 +4,7 @@
 .RData
 *.rds
 *.rda
+*.sqlite
 README.pdf
 *.DS_Store
 *.Rapp.history

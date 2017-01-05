@@ -1,8 +1,14 @@
+library(RSQLite)
 library(rstan)
 rstan_options(auto_write = TRUE)
 options(mc.cores = parallel::detectCores())
 
 setwd("/scratch/jmihaljevic1/HPV/")
+
+# set chain ID to PID
+k = Sys.getpid()
+print(k)
+dbResultsFilename <- paste0("./output/fit_null_norand_chain_",k,".sqlite")
 
 # Load the data:
 load("data/full_HIM_data_10_strains_all_patients.rda")
@@ -37,43 +43,46 @@ start <- Sys.time()
 m_fit <- stan(fit = test,
               data = stan_d,
               init = inits_f,
-              chains = 3, iter = 1500, warmup = 500,
+              chains = 1, iter = 1500, warmup = 500,
               pars = params,
               control=list(max_treedepth=13))
 end <- Sys.time()
 time_taken = end - start
 print(time_taken)
 
-R_hats = summary(m_fit)$summary[,"Rhat"]
-filename = "output/R_hats_null_norand.rds"
-saveRDS(R_hats, file = filename)
+# Save Rhat 
+R_hat_df <- data.frame(parameter = rownames(as.data.frame((summary(m_fit)$summary[,"Rhat"]))),
+                       R_hat = as.numeric((summary(m_fit)$summary[,"Rhat"])))
+table_name <- "R_hat"
+db <- dbConnect(SQLite(), dbResultsFilename)
+dbWriteTable(db,table_name,R_hat_df, append=TRUE)
+dbDisconnect(db)
 
+
+# Get posterior parameter values 
 posts = extract(m_fit, pars = params[1:15])
-filename = "output/posts_full_null_norand.rds"
-saveRDS(posts, file = filename)
+
+for( i in 1:length(posts)){
+  post_df <- as.data.frame(posts[[i]])
+  names(post_df) <- paste0(names(posts)[[i]], names(post_df))
+  post_df$chain = k
+  post_df$sample = c(1:nrow(post_df))
+  table_name <- paste0(names(posts)[[i]])
+  db <- dbConnect(SQLite(), dbResultsFilename)
+  dbWriteTable(db,table_name,post_df, append=TRUE)
+  dbDisconnect(db)
+}
 
 # extract log_lik
 log_lik = extract(m_fit, pars = "log_lik")$log_lik
 
-# clear some memory:
-rm(posts, R_hats, m_fit)
-
-# Re-dimensionalize to a Sample x Observation matrix:
-n_sample = 3000
+# Re-dimensionalize to an observation x sample matrix:
+n_sample = dim(log_lik)[1]
 dim(log_lik) = c(n_sample, n*n_strains)
-
-# Now split the matrix into manageable pieces:
-# Split by row (nrow = n_sample)
-n_files = 10
-max_row = n_sample / n_files
-these_splits = split(1:n_sample, ceiling((1:n_sample)/max_row))
-
-for(i in 1:length(these_splits)){
-  
-  lower = range(these_splits[[i]])[1]
-  upper = range(these_splits[[i]])[2]
-  
-  saveRDS(log_lik[lower:upper,], 
-          file = paste("output/loglik_full_null_norand_", i, ".rds", sep=""))
-}
-
+log_lik = t(log_lik) #Now it's an observation x sample matrix
+log_lik_df = as.data.frame(log_lik)
+#log_lik_df$chain = k
+table_name <- "loglik"
+db <- dbConnect(SQLite(), dbResultsFilename)
+dbWriteTable(db,table_name,log_lik_df, append=TRUE)
+dbDisconnect(db)
