@@ -83,14 +83,16 @@ n_col_max = 200
 col_indices <- c(1:ncol(log_lik_df))
 col_splits <- split(col_indices, ceiling(seq_along(col_indices)/n_col_max))
 
+db <- dbConnect(SQLite(), dbResultsFilename)
 for( i in c(1:length(col_splits))){
   table_name <- paste0("loglik_",i)
   ind <- unlist(col_splits[[i]]) 
   log_lik_df_subset <- log_lik_df[,ind]
-  db <- dbConnect(SQLite(), dbResultsFilename)
   dbWriteTable(db,table_name,log_lik_df_subset, append=TRUE)
-  dbDisconnect(db)
+  print(paste("Done with split", i))
 }
+dbDisconnect(db)
+
 # #log_lik_df$chain = k
 # table_name <- "loglik"
 # db <- dbConnect(SQLite(), dbResultsFilename)
