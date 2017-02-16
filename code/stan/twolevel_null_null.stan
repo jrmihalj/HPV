@@ -14,6 +14,18 @@ data {
 transformed data {
   row_vector[n_strains] sign[n];
   row_vector[n_strains] zero_vec;
+  cholesky_factor_cov[n_strains] Identity;
+  
+  // For use in generated quantities block:
+  for (j in 1:n_strains){
+    for (i in 1:n_strains){
+      if (j == i){
+        Identity[i, j] = 1;
+      } else {
+        Identity[i, j] = 0;
+      }
+    }
+  }
 
   for (j in 1:n_strains) {
     zero_vec[j] = 0;
@@ -93,10 +105,16 @@ model {
 }
 
 generated quantities {
-  row_vector[n_strains] log_lik[n];
-  for(j in 1:n_strains){
-  	for (i in 1:n){
-    	log_lik[i,j] = normal_lpdf(sign[i, j] .* abs_ystar[i, j] | mu_all[i, j], 1);
-	  }
+  //row_vector[n_strains] log_lik[n];
+  real log_lik[n];
+  
+  // To match the models with random effects:
+  for (i in 1:n) {
+    log_lik[i] = multi_normal_cholesky_lpdf((sign[i, ] .* abs_ystar[i, ]) | mu_all[i, ], Identity);
   }
+//   for(j in 1:n_strains){
+//   	for (i in 1:n){
+//     	log_lik[i,j] = normal_lpdf(sign[i, j] .* abs_ystar[i, j] | mu_all[i, j], 1);
+// 	  }
+//   }
 }
