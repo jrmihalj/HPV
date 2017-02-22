@@ -7,7 +7,7 @@
 ########################
 
 ### Set the name of the job, where jobname is a unique name for your job
-#PBS -N HPV_full
+#PBS -N HPV_full_DBfixed
 
 ### Select the shell you would like the script to execute within
 #PBS -S /bin/bash
@@ -34,7 +34,8 @@
 #################
 
 # Load the approprite applications
-module load R/3.3.1
+module load gcc/6.2.0
+module load R/3.3.2
 
 # Reset TMP file location
 export TMP=/scratch/jmihaljevic1/tempfiles/HPV/

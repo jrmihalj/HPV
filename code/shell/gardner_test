@@ -7,13 +7,13 @@
 ########################
 
 ### Set the name of the job, where jobname is a unique name for your job
-#PBS -N HPV_null_nofixed
+#PBS -N DB_test
 
 ### Select the shell you would like the script to execute within
 #PBS -S /bin/bash
 
 ### Inform the scheduler of the expected runtime, where walltime=HH:MM:SS
-#PBS -l walltime=150:00:00
+#PBS -l walltime=5:00:00
 
 ### Inform the scheduler of the number of CPU cores for your job.
 #PBS -l nodes=1:ppn=1
@@ -23,8 +23,8 @@
 #PBS -l mem=24gb
 
 ### Set the destination for your program's output.
-#PBS -o $HOME/HPV_null_nofixed.out
-#PBS -e $HOME/HPV_null_nofixed.err
+#PBS -o $HOME/DB_test.out
+#PBS -e $HOME/DB_test.err
 
 
 #################
@@ -41,4 +41,4 @@ module load R/3.3.2
 export TMP=/scratch/jmihaljevic1/tempfiles/HPV/
 
 # Execute the program
-R CMD BATCH --no-save /scratch/jmihaljevic1/HPV/code/R/fit_model_tarbell_null_nofixed.R
+R CMD BATCH --no-save /scratch/jmihaljevic1/HPV/code/R/test_db.R
